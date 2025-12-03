@@ -62,6 +62,409 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
 
+    // Chapter-to-Event mapping for Isaiah 1-66
+    // eventIndex: which map event to show (null = default/event 0)
+    // title: short chapter title
+    // note: contextual paragraph explaining the chapter
+    const chapterMapping = [
+      {
+        chapter: 1,
+        eventIndex: 0,
+        title: "Judah's Rebellion",
+        note: "Isaiah's opening chapter introduces his prophetic ministry during the reigns of Uzziah, Jotham, Ahaz, and Hezekiah. Judah stands unconquered but spiritually corrupt—God compares Jerusalem to Sodom. The LORD calls His people to repentance: 'Though your sins are like scarlet, they shall be as white as snow.' Judgment looms, but restoration remains possible."
+      },
+      {
+        chapter: 2,
+        eventIndex: 18,
+        title: "The Mountain of the LORD",
+        note: "Isaiah glimpses the ultimate future: all nations streaming to Zion to learn God's ways. 'They shall beat their swords into plowshares.' Yet before this glory comes judgment—the Day of the LORD will humble human pride. This chapter sets the pattern of Isaiah: judgment now, glory later."
+      },
+      {
+        chapter: 3,
+        eventIndex: 0,
+        title: "Judgment on Judah's Leaders",
+        note: "God pronounces judgment on Judah's corrupt leadership. The elders and princes have plundered the poor; the women of Jerusalem flaunt their wealth. Society is collapsing—'children shall be their princes, and infants shall rule over them.' The map shows Judah before foreign invasion, but internal rot has already begun."
+      },
+      {
+        chapter: 4,
+        eventIndex: 18,
+        title: "The Branch of the LORD",
+        note: "After judgment comes restoration. The 'Branch of the LORD' (a Messianic title) will be beautiful and glorious. The survivors in Jerusalem will be called holy. God will create over Zion a cloud by day and fire by night—echoing the Exodus. This brief chapter bridges judgment and hope."
+      },
+      {
+        chapter: 5,
+        eventIndex: 0,
+        title: "The Song of the Vineyard",
+        note: "God's vineyard (Judah) has produced wild grapes despite His careful tending. Six 'woes' follow against those who accumulate land, drink from morning to night, call evil good, and acquit the guilty. At the chapter's end, God whistles for a distant nation—Assyria is coming, though not yet named."
+      },
+      {
+        chapter: 6,
+        eventIndex: 0,
+        title: "Isaiah's Commission",
+        note: "In the year King Uzziah died (~740 BC), Isaiah sees the LORD enthroned in the temple. Seraphim cry 'Holy, holy, holy!' Isaiah's lips are cleansed with a burning coal, and he volunteers: 'Here am I! Send me.' His mission: preach until the cities lie waste. The map shows the nations before judgment begins."
+      },
+      {
+        chapter: 7,
+        eventIndex: 1,
+        title: "The Sign of Immanuel",
+        note: "The Syro-Ephraimite crisis: Aram (Syria) and Israel threaten Judah. King Ahaz trembles, but Isaiah offers a sign—the virgin shall conceive and bear a son called Immanuel ('God with us'). Before the child knows right from wrong, both threatening kings will be gone. But Ahaz refuses to trust God, setting Judah on a dangerous path."
+      },
+      {
+        chapter: 8,
+        eventIndex: 2,
+        title: "Assyria the Instrument",
+        note: "Isaiah's son Maher-Shalal-Hash-Baz ('swift is the spoil') becomes a sign: before he can speak, Assyria will plunder Damascus and Samaria. The flood of Assyrian armies will reach even to Judah's neck—but not drown it. 'God is with us' (Immanuel) remains the hope. The chapter ends with darkness covering those who reject God's word."
+      },
+      {
+        chapter: 9,
+        eventIndex: 3,
+        title: "A Child Is Born",
+        note: "Light dawns on Galilee (later fulfilled in Jesus' ministry). The famous Messianic prophecy: 'For unto us a child is born... Wonderful Counselor, Mighty God, Everlasting Father, Prince of Peace.' But the chapter also pronounces judgment on Israel (the Northern Kingdom). Pride and unrepentance will bring Assyrian conquest. Israel falls in 722 BC."
+      },
+      {
+        chapter: 10,
+        eventIndex: 14,
+        title: "Assyria: Rod and Victim",
+        note: "God uses Assyria as 'the rod of My anger' against godless nations. But Assyria boasts: 'By my own strength I have done this!' So God will punish Assyria's arrogance. A remnant of Israel will return—but first, judgment. The map shows nations under Assyrian control, yet Assyria itself faces divine judgment for exceeding its mandate."
+      },
+      {
+        chapter: 11,
+        eventIndex: 18,
+        title: "The Righteous Branch",
+        note: "From Jesse's stump (David's line) a Branch grows—the Messiah. The Spirit rests on Him; He judges with righteousness. Wolves dwell with lambs; a child plays near serpents. God gathers scattered Israel from Assyria, Egypt, and beyond. Former enemies unite. This Messianic vision transcends any single historical moment."
+      },
+      {
+        chapter: 12,
+        eventIndex: 18,
+        title: "Song of Salvation",
+        note: "A short hymn of praise concludes the first major section of Isaiah. 'God is my salvation; I will trust and not be afraid.' The restored people draw water from wells of salvation and proclaim God's deeds among the nations. The Holy One of Israel dwells in Zion's midst. Judgment gives way to joy."
+      },
+      {
+        chapter: 13,
+        eventIndex: 15,
+        title: "Oracle Against Babylon",
+        note: "The 'burden against Babylon' begins Isaiah's oracles against the nations. Though Babylon is currently under Assyrian rule, Isaiah sees its future rise and fall. The Medes will attack; Babylon will become like Sodom—permanently desolate. This prophecy looks beyond Isaiah's day to 539 BC and beyond."
+      },
+      {
+        chapter: 14,
+        eventIndex: 15,
+        title: "Babylon's King Falls",
+        note: "A taunt-song against Babylon's king: 'How you have fallen from heaven, O Day Star!' The oppressor who shook kingdoms is brought down to Sheol. The chapter also includes a brief oracle against Philistia (v.28-32), warning them not to rejoice at Assyria's troubles—worse is coming."
+      },
+      {
+        chapter: 15,
+        eventIndex: 6,
+        title: "Oracle Against Moab (Part 1)",
+        note: "Moab, east of the Dead Sea, faces devastating judgment. Ar and Kir fall in a single night. The people flee, weeping. Isaiah himself mourns: 'My heart cries out for Moab!' Even in pronouncing judgment, the prophet shows compassion. Moab's pride will be humbled; her refugees seek shelter."
+      },
+      {
+        chapter: 16,
+        eventIndex: 6,
+        title: "Oracle Against Moab (Part 2)",
+        note: "The oracle continues: Moab should send tribute to Jerusalem and shelter Judah's outcasts. But Moab's pride prevents humility. 'We have heard of the pride of Moab—very proud.' Isaiah weeps for Moab's vineyards and joy. Within three years, Moab's glory will be contemptible. Yet a throne of steadfast love awaits in David's tent."
+      },
+      {
+        chapter: 17,
+        eventIndex: 2,
+        title: "Oracle Against Damascus",
+        note: "Damascus, capital of Aram (Syria), will become 'a heap of ruins.' The cities of Aroer are abandoned. Israel's glory also fades—only gleanings remain, like olives left after harvest. Yet 'in that day' people will look to their Maker. This prophecy found fulfillment in 732 BC under Tiglath-Pileser III."
+      },
+      {
+        chapter: 18,
+        eventIndex: 9,
+        title: "Oracle Concerning Cush",
+        note: "Cush (ancient Ethiopia/Nubia) sends envoys by papyrus boats on the Nile. God watches quietly as events unfold. Before harvest, He cuts down the shoots—Assyria's plans will fail. Eventually, gifts will come to Zion from this 'land of whirring wings.' Cush represents the distant nations God will ultimately reach."
+      },
+      {
+        chapter: 19,
+        eventIndex: 9,
+        title: "Oracle Against Egypt",
+        note: "The LORD rides a cloud into Egypt; her idols tremble. Civil war, drought, and foolish counsel afflict her. Yet the oracle ends remarkably: Egypt will know the LORD, worship Him, and be blessed alongside Assyria and Israel. 'Blessed be Egypt My people, Assyria My handiwork, and Israel My inheritance.' Enemies become family."
+      },
+      {
+        chapter: 20,
+        eventIndex: 9,
+        title: "Sign Against Egypt and Cush",
+        note: "Isaiah walks naked and barefoot for three years as a living sign: Assyria will lead away Egyptian and Cushite captives, naked and barefoot. Those who trusted in Egypt for help against Assyria will be dismayed. Judah must not rely on foreign alliances but on God alone."
+      },
+      {
+        chapter: 21,
+        eventIndex: 15,
+        title: "Oracles: Babylon, Edom, Arabia",
+        note: "Three brief oracles. 'The Desert by the Sea' (Babylon): 'Fallen, fallen is Babylon!' The watchman sees chariots coming. 'Dumah' (Edom): 'Watchman, what of the night?' Morning comes, but also night—Edom's future is uncertain. 'Arabia': Within a year, Kedar's glory fails. The caravans of Dedanites flee into the wilderness."
+      },
+      {
+        chapter: 22,
+        eventIndex: 12,
+        title: "The Valley of Vision",
+        note: "Jerusalem (the 'Valley of Vision') faces siege. The people prepare defenses but don't look to God. Instead of repentance, they feast: 'Let us eat and drink, for tomorrow we die!' Shebna the steward is demoted; Eliakim replaces him. The chapter reflects the crisis of Sennacherib's invasion in 701 BC."
+      },
+      {
+        chapter: 23,
+        eventIndex: 8,
+        title: "Oracle Against Tyre",
+        note: "Tyre, the great Phoenician trading city, will be laid waste. Ships of Tarshish wail; merchants who were 'princes' mourn. Tyre will be forgotten for seventy years, then restored—but her profits will be 'holy to the LORD,' used for those who dwell before Him. Even commercial power serves God's purposes."
+      },
+      {
+        chapter: 24,
+        eventIndex: null,
+        title: "The LORD's Devastation",
+        note: "The 'Little Apocalypse' begins. God devastates the whole earth—not just one nation. The earth mourns; wine fails; joy is gone. A remnant sings from the west, but Isaiah cries 'I waste away!' Cosmic upheaval: the moon is confounded, the sun ashamed. Yet the LORD of hosts will reign on Mount Zion in glory."
+      },
+      {
+        chapter: 25,
+        eventIndex: null,
+        title: "Praise for God's Salvation",
+        note: "A hymn of praise follows the apocalyptic vision. God has been a stronghold to the poor. On Mount Zion, He prepares a feast for all peoples and swallows up death forever. 'He will wipe away tears from all faces.' The reproach of His people is removed. 'This is the LORD; we have waited for Him!'"
+      },
+      {
+        chapter: 26,
+        eventIndex: null,
+        title: "A Song of Trust",
+        note: "Judah sings in 'that day': 'We have a strong city!' God keeps in perfect peace those whose minds are stayed on Him. The chapter moves between trust and longing. 'Your dead shall live; their bodies shall rise.' This resurrection hope sustains God's people through judgment. 'Come, my people, enter your chambers... until the fury has passed.'"
+      },
+      {
+        chapter: 27,
+        eventIndex: null,
+        title: "Israel's Final Restoration",
+        note: "God slays Leviathan, the twisting serpent. His vineyard (contrast chapter 5) He now tends carefully—no thorns or briers remain. Israel's guilt is atoned when altar stones are crushed. God gathers His people one by one from Assyria and Egypt. 'In that day a great trumpet will sound,' and the scattered worship in Jerusalem."
+      },
+      {
+        chapter: 28,
+        eventIndex: 3,
+        title: "Woe to Ephraim",
+        note: "Woe to the 'proud crown' of Ephraim (Israel/Samaria)—drunkards whose glorious beauty fades like a fig. Priests and prophets stagger. But God will lay in Zion a 'tested stone, a precious cornerstone.' Those who trust will not be in haste. Meanwhile, judgment comes like a flood. Israel's fall (722 BC) looms."
+      },
+      {
+        chapter: 29,
+        eventIndex: 12,
+        title: "Woe to Ariel (Jerusalem)",
+        note: "'Ariel' (lion of God) means Jerusalem, where David camped. God will besiege His own city—yet her enemies will vanish like a dream. The people honor God with lips but not hearts; their wisdom fails. Yet 'in that day' the deaf hear, the blind see, and the meek rejoice. Lebanon becomes a fruitful field."
+      },
+      {
+        chapter: 30,
+        eventIndex: 9,
+        title: "Woe to Those Trusting Egypt",
+        note: "Woe to rebellious children who seek Egypt's protection without consulting God! Pharaoh's help is worthless; Egypt is 'Rahab who sits still.' The people refuse to hear prophets. Yet God waits to be gracious—'Blessed are all who wait for Him.' When the people cry, God will answer. Assyria falls by a voice, not a sword."
+      },
+      {
+        chapter: 31,
+        eventIndex: 9,
+        title: "Egypt Cannot Save",
+        note: "Woe to those going to Egypt for horses and chariots! Egyptians are men, not God; their horses are flesh, not spirit. Yet the LORD will protect Jerusalem 'like birds hovering.' Assyria will fall 'by a sword not of man.' Israel must turn from idols. This chapter reinforces the futility of human alliances against divine purpose."
+      },
+      {
+        chapter: 32,
+        eventIndex: null,
+        title: "The Righteous King",
+        note: "A king will reign in righteousness; princes rule with justice. Eyes will see, ears will hear, and fools will no longer be honored. But first, complacent women must tremble—thorns will cover the pleasant fields. Only when the Spirit is poured from on high will the wilderness become fruitful. Righteousness brings peace and security."
+      },
+      {
+        chapter: 33,
+        eventIndex: 12,
+        title: "Distress and Deliverance",
+        note: "The destroyer (Assyria) will be destroyed. Jerusalem is in distress—envoys weep, highways are deserted. But God arises! He is the stability of Zion. The sinners in Zion tremble: 'Who among us can dwell with everlasting fire?' Those who walk righteously will see the king in his beauty and dwell securely."
+      },
+      {
+        chapter: 34,
+        eventIndex: 16,
+        title: "Judgment on Edom",
+        note: "God's fury falls on all nations, but especially Edom. The LORD has a sacrifice in Bozrah; the land becomes burning pitch. Wild animals inhabit the ruins. 'Seek and read from the book of the LORD'—not one creature will lack its mate. Edom's desolation is permanent, a testimony to divine judgment on those who oppose God's people."
+      },
+      {
+        chapter: 35,
+        eventIndex: 18,
+        title: "The Ransomed Return",
+        note: "The wilderness blooms; the desert rejoices! The glory of Lebanon and the majesty of Carmel appear. Weak hands are strengthened; fearful hearts made firm. 'Your God will come with vengeance, with divine recompense.' The blind see, the deaf hear, the lame leap, the mute sing. The ransomed return to Zion with everlasting joy."
+      },
+      {
+        chapter: 36,
+        eventIndex: 12,
+        title: "Sennacherib Threatens Jerusalem",
+        note: "In 701 BC, Sennacherib's army surrounds Jerusalem. The Rabshakeh mocks: 'Has any god delivered his land from my hand?' He lists conquered nations. Don't trust Hezekiah; don't trust the LORD. The people remain silent as commanded. This historical narrative (also in 2 Kings 18-19) shows the crisis at its peak."
+      },
+      {
+        chapter: 37,
+        eventIndex: 13,
+        title: "Jerusalem Delivered",
+        note: "Hezekiah tears his clothes, enters the temple, and sends to Isaiah. The prophet responds: 'Do not fear.' Sennacherib sends a threatening letter; Hezekiah spreads it before the LORD. Isaiah prophesies Assyria's defeat. That night, the Angel of the LORD strikes 185,000 Assyrians. Sennacherib retreats and is later murdered by his sons."
+      },
+      {
+        chapter: 38,
+        eventIndex: 13,
+        title: "Hezekiah's Illness and Recovery",
+        note: "Hezekiah falls deathly ill. Isaiah tells him to set his house in order. The king weeps and prays; God grants fifteen more years and promises to deliver Jerusalem. The sun's shadow goes backward as a sign. Hezekiah's psalm of thanksgiving follows: 'The living, the living, he thanks You, as I do this day.'"
+      },
+      {
+        chapter: 39,
+        eventIndex: 15,
+        title: "Envoys from Babylon",
+        note: "Merodach-Baladan of Babylon sends envoys after Hezekiah's recovery. The king shows them all his treasures—a foolish act. Isaiah pronounces judgment: everything will be carried to Babylon; Hezekiah's descendants will serve in Babylon's palace. This chapter bridges the Assyrian crisis to the coming Babylonian exile, pivoting Isaiah toward chapters 40-66."
+      },
+      {
+        chapter: 40,
+        eventIndex: 17,
+        title: "Comfort My People",
+        note: "'Comfort, comfort My people,' says God. Jerusalem's warfare is ended; her iniquity pardoned. A voice cries: 'Prepare the way of the LORD!' All flesh is grass, but God's word stands forever. The LORD comes with might, yet gently carries lambs. Who measured the waters? Who taught Him? The nations are a drop in a bucket. 'Fear not!'"
+      },
+      {
+        chapter: 41,
+        eventIndex: 17,
+        title: "God's Chosen Servant",
+        note: "God summons nations to court: 'Who stirred up one from the east?' (Cyrus, though unnamed). Idols cannot predict the future—they are wind and emptiness. But Israel is God's servant, chosen, not cast off. 'Fear not, for I am with you.' God makes Israel a threshing sledge. The poor seek water—God will not forsake them."
+      },
+      {
+        chapter: 42,
+        eventIndex: 17,
+        title: "The Servant's Mission",
+        note: "The first 'Servant Song': 'Behold My servant... I have put My Spirit upon Him.' He will not break a bruised reed. God calls Him to be 'a light for the nations, to open the eyes that are blind.' A new song arises! Yet Israel, God's servant, is blind and deaf. God gave them to plunderers because of sin, but redemption comes."
+      },
+      {
+        chapter: 43,
+        eventIndex: 17,
+        title: "Fear Not, I Have Redeemed You",
+        note: "'Fear not, for I have redeemed you; I have called you by name, you are Mine.' Through water and fire, God is with Israel. He gathers them from east and west. 'Before Me no god was formed, nor shall there be after Me. I, I am the LORD.' God makes a way in the sea—forget the former things! He does a new thing."
+      },
+      {
+        chapter: 44,
+        eventIndex: 17,
+        title: "Israel Chosen, Idols Mocked",
+        note: "God pours His Spirit on Israel's offspring. 'I am the first and the last; besides Me there is no god.' Idolaters are mocked: a man plants a tree, burns half for warmth, roasts meat, and makes the rest into a god! Yet God blots out Israel's sins like a cloud. Then the stunning prophecy: Cyrus is named—150 years early."
+      },
+      {
+        chapter: 45,
+        eventIndex: 17,
+        title: "Cyrus, God's Anointed",
+        note: "Cyrus is called God's 'anointed' (messiah)—the only Gentile so named. God takes his right hand, opens doors, breaks bronze gates. 'For the sake of Jacob My servant... I name you, though you do not know Me.' There is no God besides the LORD. Every knee will bow. Israel is saved with everlasting salvation."
+      },
+      {
+        chapter: 46,
+        eventIndex: 15,
+        title: "Babylon's Gods Fall",
+        note: "Bel bows down; Nebo stoops—Babylon's gods are carried on weary beasts. But God carries Israel from birth to gray hairs. 'To whom will you compare Me?' Idols are made by craftsmen—they cannot move or answer. God's purpose stands: 'I bring near My righteousness.' Salvation comes to Zion. Babylon's fall is certain."
+      },
+      {
+        chapter: 47,
+        eventIndex: 15,
+        title: "The Fall of Babylon",
+        note: "'Come down and sit in the dust, O virgin daughter of Babylon!' She showed Israel no mercy; she said 'I shall be mistress forever.' Her sorceries and enchantments will not save her. Disaster comes suddenly. This taunt-song over Babylon complements chapter 13-14. The empire that will exile Judah will itself face complete judgment."
+      },
+      {
+        chapter: 48,
+        eventIndex: 17,
+        title: "Leave Babylon!",
+        note: "Israel has been obstinate—'your neck is an iron sinew.' God declared things beforehand so Israel couldn't credit idols. Now He reveals new things. 'For My own sake, I do it.' God teaches what is profitable. 'If you had paid attention!' Yet mercy remains: 'Go out from Babylon!' The redeemed will not thirst; God leads them home."
+      },
+      {
+        chapter: 49,
+        eventIndex: null,
+        title: "The Servant's Call",
+        note: "The second Servant Song: 'The LORD called Me from the womb.' The Servant feels He has labored in vain, yet God makes Him 'a light for the nations, that My salvation may reach to the end of the earth.' Zion says, 'The LORD has forsaken me.' But can a mother forget her child? God's love is greater. Kings and queens bow to Israel."
+      },
+      {
+        chapter: 50,
+        eventIndex: null,
+        title: "The Obedient Servant",
+        note: "The third Servant Song: 'The Lord GOD has given Me the tongue of those who are taught.' The Servant gives His back to those who strike, His cheeks to those who pull out the beard. He sets His face like flint. 'Who will contend with Me?' Those walking in darkness should trust in the LORD's name."
+      },
+      {
+        chapter: 51,
+        eventIndex: null,
+        title: "Comfort for Zion",
+        note: "'Listen to Me, you who pursue righteousness.' Look to Abraham and Sarah—God blessed one and made him many. Zion's wilderness will become like Eden. 'My righteousness draws near.' The heavens vanish like smoke, but God's salvation is forever. 'Awake, awake!' The cup of staggering is taken from Jerusalem and given to her tormentors."
+      },
+      {
+        chapter: 52,
+        eventIndex: null,
+        title: "Awake, O Zion!",
+        note: "'Awake, put on your strength, O Zion!' Jerusalem shakes off her chains. 'How beautiful on the mountains are the feet of him who brings good news!' The LORD has comforted His people. Then the fourth Servant Song begins: 'My servant shall act wisely; He shall be high and lifted up'—yet His appearance was marred beyond recognition."
+      },
+      {
+        chapter: 53,
+        eventIndex: null,
+        title: "The Suffering Servant",
+        note: "The heart of Isaiah: 'He was despised and rejected... a man of sorrows.' He bore our griefs, carried our sorrows. 'He was pierced for our transgressions, crushed for our iniquities.' Like a lamb led to slaughter, He was silent. Though He had done no violence, He was cut off. Yet He sees His offspring; the LORD's will prospers in His hand."
+      },
+      {
+        chapter: 54,
+        eventIndex: null,
+        title: "Zion's Future Glory",
+        note: "'Sing, O barren one!' The desolate woman will have more children than the married. Enlarge your tent; your offspring will possess nations. God's love is like Noah's covenant—eternal. No weapon formed against Zion will prosper. 'This is the heritage of the servants of the LORD.' Affliction becomes adornment; mourning becomes joy."
+      },
+      {
+        chapter: 55,
+        eventIndex: null,
+        title: "Invitation to the Thirsty",
+        note: "'Come, everyone who thirsts, come to the waters!' Buy wine and milk without money. Why spend on what doesn't satisfy? Seek the LORD while He may be found. 'My thoughts are not your thoughts.' Rain accomplishes its purpose; so does God's word. The people go out with joy; mountains and trees clap their hands. Thorns give way to cypress."
+      },
+      {
+        chapter: 56,
+        eventIndex: null,
+        title: "Salvation for All",
+        note: "Justice and righteousness matter—sabbath-keeping and covenant-holding. Foreigners and eunuchs who join themselves to the LORD will not be excluded. God's house is 'a house of prayer for all peoples.' Yet Israel's watchmen are blind; her shepherds lack understanding. They love sleep and wine. This chapter bridges comfort and critique."
+      },
+      {
+        chapter: 57,
+        eventIndex: null,
+        title: "The Righteous and the Wicked",
+        note: "The righteous perish unnoticed; the wicked mock. Israel has played the harlot with idols, sacrificing children in valleys. Yet the high and lofty One 'dwells with him who is of a contrite and lowly spirit.' God heals and restores those who mourn. Peace to those far and near! But the wicked are like the tossing sea—no peace for them."
+      },
+      {
+        chapter: 58,
+        eventIndex: null,
+        title: "True Fasting",
+        note: "Israel fasts but oppresses workers. 'Is this the fast I choose?' No—loose the bonds of wickedness, share bread with the hungry, house the homeless. Then light breaks forth; healing comes. The sabbath is a delight, not a burden. God will feed Israel and rebuild ancient ruins. Religion without justice is empty ritual."
+      },
+      {
+        chapter: 59,
+        eventIndex: null,
+        title: "Sin and Redemption",
+        note: "God's hand is not too short to save, but 'your iniquities have made a separation.' Lies, violence, and injustice fill the land. Justice is far away; truth has fallen in the streets. God sees that there is no one to intervene—so His own arm brings salvation. He puts on righteousness as a breastplate. A Redeemer comes to Zion."
+      },
+      {
+        chapter: 60,
+        eventIndex: 18,
+        title: "Arise, Shine!",
+        note: "'Arise, shine, for your light has come!' Darkness covers the earth, but the LORD's glory rises upon Zion. Nations come to her light; kings to her brightness. Camels from Midian and Sheba bring gold and incense. The sons of foreigners build her walls. 'The sun shall be no more your light by day'—the LORD is everlasting light."
+      },
+      {
+        chapter: 61,
+        eventIndex: 18,
+        title: "Good News to the Afflicted",
+        note: "'The Spirit of the Lord GOD is upon Me, because He has anointed Me to bring good news to the poor.' Jesus read this in Nazareth's synagogue. Liberty for captives; comfort for mourners; beauty for ashes. God's people become 'oaks of righteousness.' They rebuild ancient ruins. An everlasting covenant is established. Zion rejoices like a bride."
+      },
+      {
+        chapter: 62,
+        eventIndex: 18,
+        title: "Zion's Vindication",
+        note: "Isaiah will not rest until Zion's righteousness shines. She receives a new name: 'My Delight Is in Her' and 'Married.' Watchmen on Jerusalem's walls give God no rest until He establishes the city. 'Go through the gates! Prepare the way!' The LORD proclaims to Zion: 'Your salvation comes.' She will be called 'Sought Out.'"
+      },
+      {
+        chapter: 63,
+        eventIndex: null,
+        title: "The Divine Warrior",
+        note: "'Who is this coming from Edom, in crimsoned garments?' The LORD has trodden the winepress alone; His robes are stained with judgment. Then a long prayer begins: God led Israel through the sea; His Holy Spirit was in their midst. 'You are our Father, our Redeemer.' Where now are Your zeal and might? Your people possess the sanctuary so briefly."
+      },
+      {
+        chapter: 64,
+        eventIndex: null,
+        title: "A Prayer for Mercy",
+        note: "'Oh that You would rend the heavens and come down!' Mountains quake before God. No eye has seen a God like Him, who acts for those who wait. Yet 'we have all become like one who is unclean.' We fade like leaves; our iniquities carry us away. 'Be not so terribly angry, O LORD!' Zion is desolate; the temple is burned."
+      },
+      {
+        chapter: 65,
+        eventIndex: 18,
+        title: "New Heavens and New Earth",
+        note: "God was ready to be found by those who didn't seek Him. But Israel provoked Him with idols and self-righteousness. A remnant survives—His servants inherit the land. 'Behold, I create new heavens and a new earth.' Jerusalem becomes a joy; the wolf and lamb feed together. No more weeping; no more infant death. God answers before they call."
+      },
+      {
+        chapter: 66,
+        eventIndex: 18,
+        title: "The LORD's Final Triumph",
+        note: "Heaven is God's throne, earth His footstool—what house can contain Him? He looks to the humble and contrite. Those who worship wrongly bring abominations. Jerusalem gives birth suddenly; her children are comforted. God's enemies face fire and judgment. 'All flesh shall come to worship before Me.' Isaiah ends with new creation and eternal worship."
+      }
+    ];
+
     // Empire/Conquering power colors
     const empireColors = {
       assyria: "#7a8c72",      // Olive green (like the reference map)
@@ -758,30 +1161,45 @@
     function App() {
       const [currentEventIndex, setCurrentEventIndex] = useState(0);
       const [isAnimating, setIsAnimating] = useState(false);
+      const [selectedChapter, setSelectedChapter] = useState(null);
+      const [chapterPanelOpen, setChapterPanelOpen] = useState(false);
       const currentEvent = events[currentEventIndex];
-      
+
       // Count conquered nations
       const conqueredCount = Object.keys(currentEvent.conqueredBy).length;
       const mainNations = Object.keys(nations).filter(k => !nations[k].contextOnly && k !== 'judah').length;
-      
+
       const goToNext = () => {
         if (currentEventIndex < events.length - 1 && !isAnimating) {
           setIsAnimating(true);
+          setSelectedChapter(null); // Clear chapter selection when navigating
           setTimeout(() => { setCurrentEventIndex(prev => prev + 1); setIsAnimating(false); }, 300);
         }
       };
-      
+
       const goToPrevious = () => {
         if (currentEventIndex > 0 && !isAnimating) {
           setIsAnimating(true);
+          setSelectedChapter(null); // Clear chapter selection when navigating
           setTimeout(() => { setCurrentEventIndex(prev => prev - 1); setIsAnimating(false); }, 300);
         }
       };
-      
+
       const goToEvent = (index) => {
         if (!isAnimating) {
           setIsAnimating(true);
+          setSelectedChapter(null); // Clear chapter selection when navigating
           setTimeout(() => { setCurrentEventIndex(index); setIsAnimating(false); }, 300);
+        }
+      };
+
+      const selectChapter = (chapterNum) => {
+        const chapter = chapterMapping[chapterNum - 1];
+        setSelectedChapter(chapter);
+        const targetEvent = chapter.eventIndex !== null ? chapter.eventIndex : 0;
+        if (targetEvent !== currentEventIndex && !isAnimating) {
+          setIsAnimating(true);
+          setTimeout(() => { setCurrentEventIndex(targetEvent); setIsAnimating(false); }, 300);
         }
       };
 
@@ -1016,6 +1434,104 @@
             <p className="text-center mt-4 text-sm" style={{color: '#8B7355'}}>
               Use ← → arrow keys or spacebar to navigate • Watch as Judah becomes surrounded yet remains unconquered
             </p>
+
+            {/* Chapter Navigator */}
+            <div className="mt-6 parchment-bg rounded-lg scroll-border overflow-hidden">
+              {/* Header - clickable to expand/collapse */}
+              <button
+                onClick={() => setChapterPanelOpen(!chapterPanelOpen)}
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-black/5 transition-colors"
+              >
+                <span className="cinzel font-semibold flex items-center gap-2" style={{color: '#3d2e1e'}}>
+                  <span>📖</span> Read by Chapter
+                </span>
+                <span style={{color: '#8B7355', transform: chapterPanelOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s'}}>
+                  ▼
+                </span>
+              </button>
+
+              {/* Expandable content */}
+              {chapterPanelOpen && (
+                <div className="px-4 pb-4 border-t" style={{borderColor: '#c9b896'}}>
+                  {/* Chapter selector */}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <label className="text-sm font-semibold" style={{color: '#5c4a32'}}>
+                      Select chapter:
+                    </label>
+                    <select
+                      value={selectedChapter ? selectedChapter.chapter : ''}
+                      onChange={(e) => e.target.value && selectChapter(parseInt(e.target.value))}
+                      className="px-3 py-2 rounded-lg text-sm font-semibold cursor-pointer"
+                      style={{
+                        background: 'linear-gradient(135deg, #3d2e1e 0%, #2c1810 100%)',
+                        border: '2px solid #8B7355',
+                        color: '#f4e4bc',
+                        minWidth: '140px'
+                      }}
+                    >
+                      <option value="">Choose...</option>
+                      {chapterMapping.map((ch) => (
+                        <option key={ch.chapter} value={ch.chapter}>
+                          Isaiah {ch.chapter}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Chapter context display */}
+                  {selectedChapter && (
+                    <div className="mt-4 p-4 rounded-lg scripture-box fade-in">
+                      <h3 className="cinzel font-bold text-lg mb-2" style={{color: '#3d2e1e'}}>
+                        Isaiah {selectedChapter.chapter}: {selectedChapter.title}
+                      </h3>
+                      <p className="text-base leading-relaxed" style={{color: '#4a3c2d'}}>
+                        {selectedChapter.note}
+                      </p>
+                      {selectedChapter.eventIndex === null && (
+                        <p className="mt-3 text-sm italic" style={{color: '#8B7355'}}>
+                          ✦ This chapter focuses on theological and Messianic themes rather than specific nations on the map.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Quick chapter grid for easy selection */}
+                  <div className="mt-4">
+                    <p className="text-xs mb-2" style={{color: '#8B7355'}}>Quick select:</p>
+                    <div className="grid grid-cols-11 gap-1">
+                      {chapterMapping.map((ch) => (
+                        <button
+                          key={ch.chapter}
+                          onClick={() => selectChapter(ch.chapter)}
+                          className={`w-7 h-7 text-xs rounded transition-all ${
+                            selectedChapter && selectedChapter.chapter === ch.chapter
+                              ? 'ring-2 ring-offset-1'
+                              : 'hover:bg-black/10'
+                          }`}
+                          style={{
+                            background: selectedChapter && selectedChapter.chapter === ch.chapter
+                              ? '#D4AF37'
+                              : ch.eventIndex !== null
+                                ? 'rgba(139, 115, 85, 0.3)'
+                                : 'rgba(139, 115, 85, 0.1)',
+                            color: selectedChapter && selectedChapter.chapter === ch.chapter
+                              ? '#2c1810'
+                              : '#5c4a32',
+                            ringColor: '#D4AF37'
+                          }}
+                          title={`Isaiah ${ch.chapter}: ${ch.title}`}
+                        >
+                          {ch.chapter}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs mt-2" style={{color: '#8B7355'}}>
+                      Darker = chapters with map events • Lighter = theological/Messianic focus
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       );
