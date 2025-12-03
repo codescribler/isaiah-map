@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Prophecies of Isaiah - Interactive Map</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Crimson Pro', Georgia, serif; }
+    .cinzel { font-family: 'Cinzel', serif; }
+    body {
+      background: linear-gradient(135deg, #2c1810 0%, #1a0f0a 50%, #0d0705 100%);
+      min-height: 100vh;
+    }
+    .parchment-bg {
+      background: linear-gradient(135deg, #f4e4bc 0%, #e8d5b7 50%, #dcc9a8 100%);
+      box-shadow: inset 0 0 100px rgba(139, 115, 85, 0.3), 0 10px 40px rgba(0,0,0,0.5);
+    }
+    .scroll-border {
+      border: 3px solid #8B7355;
+      border-image: linear-gradient(135deg, #D4AF37, #8B7355, #D4AF37) 1;
+    }
+    .scripture-box {
+      background: linear-gradient(135deg, rgba(139, 115, 85, 0.15) 0%, rgba(212, 175, 55, 0.1) 100%);
+      border-left: 3px solid #D4AF37;
+    }
+    .timeline-dot { transition: all 0.3s ease; }
+    .timeline-dot:hover { transform: scale(1.3); }
+    .timeline-dot.active { box-shadow: 0 0 10px #D4AF37, 0 0 20px rgba(212, 175, 55, 0.5); }
+    .nav-btn {
+      background: linear-gradient(135deg, #3d2e1e 0%, #2c1810 100%);
+      border: 2px solid #8B7355;
+      transition: all 0.3s ease;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #5c4a32 0%, #3d2e1e 100%);
+      border-color: #D4AF37;
+      box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+    }
+    .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .fade-in { animation: fadeIn 0.5s ease-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .map-container {
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E"),
+        linear-gradient(135deg, #f4e4bc 0%, #e8d5b7 50%, #dcc9a8 100%);
+    }
+    .territory-path {
+      transition: fill 0.8s ease, stroke 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Empire/Conquering power colors
+    const empireColors = {
+      assyria: "#7a8c72",      // Olive green (like the reference map)
+      babylon: "#8b7355",      // Brown
+      persia: "#6b8e9f",       // Blue-grey for Medo-Persian
+      independent: "original", // Use nation's own color
+      divine: "#D4AF37"        // Gold for divine judgment
+    };
+
+    // Nation data with more accurate geography based on reference map
+    const nations = {
+      // Major empires
+      assyria: { 
+        name: "Assyria", 
+        labelX: 68, labelY: 25,
+        cityX: 72, cityY: 20, cityName: "Nineveh",
+        color: "#7a8c72",
+        // Large territory - upper Mesopotamia
+        path: "M 50 8 L 62 5 L 78 8 L 88 15 L 90 28 L 85 38 L 78 42 L 70 40 L 62 42 L 55 38 L 48 30 L 45 20 L 48 12 Z"
+      },
+      babylon: { 
+        name: "Babylon", 
+        labelX: 78, labelY: 52,
+        cityX: 75, cityY: 48, cityName: "Babylon",
+        color: "#8b7355",
+        // Lower Mesopotamia
+        path: "M 62 42 L 70 40 L 78 42 L 85 38 L 92 45 L 95 58 L 88 68 L 78 65 L 70 62 L 65 55 L 62 48 Z"
+      },
+      media: {
+        name: "Media",
+        labelX: 88, labelY: 28,
+        color: "#9a9a7a",
+        // East of Assyria
+        path: "M 88 15 L 98 12 L 100 25 L 98 38 L 92 42 L 85 38 L 90 28 Z",
+        contextOnly: true
+      },
+      elam: {
+        name: "Elam",
+        labelX: 92, labelY: 55,
+        color: "#8a9a8a",
+        // Southeast of Babylon
+        path: "M 92 45 L 100 42 L 100 65 L 95 70 L 88 68 L 95 58 Z",
+        contextOnly: true
+      },
+      
+      // Levantine nations (from north to south along coast)
+      aram: { 
+        name: "Aram", 
+        labelX: 42, labelY: 32,
+        cityX: 48, cityY: 35, cityName: "Damascus",
+        color: "#6b8b6b",
+        // Syria/Aram - inland from Phoenicia
+        path: "M 38 25 L 48 22 L 55 28 L 55 38 L 48 42 L 40 40 L 35 32 Z"
+      },
+      phoenicia: { 
+        name: "Phoenicia", 
+        labelX: 30, labelY: 32,
+        cityX: 28, cityY: 35, cityName: "Tyre",
+        color: "#4a6a8a",
+        // Coastal strip - Tyre, Sidon
+        path: "M 25 25 L 32 24 L 35 28 L 35 40 L 32 44 L 25 42 L 22 35 Z"
+      },
+      israel: { 
+        name: "Israel", 
+        labelX: 30, labelY: 44,
+        cityX: 28, cityY: 46, cityName: "Samaria",
+        color: "#5a7a5a",
+        // Northern kingdom - includes Galilee down to roughly Samaria
+        path: "M 25 42 L 32 44 L 35 40 L 40 40 L 42 46 L 38 52 L 32 52 L 25 48 Z"
+      },
+      ammon: {
+        name: "Ammon",
+        labelX: 45, labelY: 50,
+        color: "#7a6a5a",
+        // East of Jordan, north of Moab
+        path: "M 42 46 L 48 42 L 55 45 L 55 52 L 48 56 L 42 54 L 38 52 Z"
+      },
+      judah: {
+        name: "Judah",
+        labelX: 28, labelY: 58,
+        cityX: 30, cityY: 55, cityName: "Jerusalem",
+        color: "#D4AF37",
+        // Southern kingdom - smaller than Israel
+        path: "M 25 52 L 32 52 L 38 52 L 42 54 L 40 62 L 35 68 L 28 66 L 22 60 Z",
+        isJudah: true
+      },
+      philistia: { 
+        name: "Philistia", 
+        labelX: 20, labelY: 55,
+        cityX: 18, cityY: 52, cityName: "Ashdod",
+        color: "#5a6a4a",
+        // Coastal plain southwest of Judah
+        path: "M 15 48 L 22 46 L 25 48 L 25 52 L 22 60 L 18 62 L 12 58 L 12 52 Z"
+      },
+      moab: { 
+        name: "Moab", 
+        labelX: 45, labelY: 62,
+        cityX: 44, cityY: 58, cityName: "Ar",
+        color: "#8a7a6a",
+        // East of Dead Sea
+        path: "M 42 54 L 48 56 L 52 60 L 50 68 L 44 72 L 38 70 L 35 68 L 40 62 Z"
+      },
+      edom: { 
+        name: "Edom", 
+        labelX: 38, labelY: 78,
+        cityX: 40, cityY: 75, cityName: "Bozrah",
+        color: "#9a6a5a",
+        // South of Moab and Judah
+        path: "M 28 66 L 35 68 L 44 72 L 48 78 L 42 85 L 32 88 L 25 82 L 22 74 Z"
+      },
+      
+      // Southern nations
+      egypt: { 
+        name: "Egypt", 
+        labelX: 12, labelY: 72,
+        cityX: 8, cityY: 78, cityName: "Memphis",
+        color: "#6a8a6a",
+        // Nile delta and valley
+        path: "M 2 55 L 12 52 L 12 58 L 18 62 L 20 70 L 18 80 L 12 90 L 5 95 L 2 88 Z"
+      },
+      cush: { 
+        name: "Cush", 
+        labelX: 15, labelY: 95,
+        color: "#5a5a4a",
+        // South of Egypt
+        path: "M 5 95 L 12 90 L 22 92 L 35 98 L 2 98 Z"
+      },
+      arabia: { 
+        name: "Arabia", 
+        labelX: 55, labelY: 85,
+        cityX: 50, cityY: 78, cityName: "Dumah",
+        color: "#c4a882",
+        // Large desert area
+        path: "M 32 88 L 42 85 L 48 78 L 55 75 L 70 72 L 78 78 L 75 92 L 55 98 L 35 98 L 22 92 Z"
+      }
+    };
+
+    // Jerusalem marker position
+    const jerusalem = { x: 30, y: 55, name: "Jerusalem" };
+
+    // Dead Sea position
+    const deadSea = { x: 38, y: 58, width: 3, height: 10 };
+
+    const events = [
+      {
+        id: 0, title: "The Nations Before Judgment", year: "~740 BC",
+        description: "Isaiah begins his prophetic ministry during the reign of Uzziah. The ancient Near East is a patchwork of kingdoms—Assyria rising in the north, Egypt enduring in the south, and the small kingdoms caught between.",
+        scripture: "Isaiah 1:1",
+        scriptureText: "The vision of Isaiah the son of Amoz, which he saw concerning Judah and Jerusalem in the days of Uzziah, Jotham, Ahaz, and Hezekiah, kings of Judah.",
+        conqueredBy: {}, // nation: conqueror
+        highlights: ['judah'],
+        arrows: []
+      },
+      {
+        id: 1, title: "Assyria: Rod of God's Anger", year: "~735 BC",
+        description: "God raises Assyria as His instrument of judgment. The empire's armies begin their march southward. Though Assyria acts from pride and greed, unknowingly they serve the Lord's purposes.",
+        scripture: "Isaiah 10:5-7",
+        scriptureText: "Woe to Assyria, the rod of My anger and the staff in whose hand is My indignation. I will send him against an ungodly nation...",
+        conqueredBy: {},
+        highlights: ['assyria'],
+        arrows: [{from: {x: 68, y: 25}, to: {x: 48, y: 35}, color: '#7a8c72'}]
+      },
+      {
+        id: 2, title: "Damascus Falls", year: "732 BC",
+        description: "Aram's capital Damascus falls to Tiglath-Pileser III. The city that conspired with Israel against Judah becomes a ruinous heap. Assyria's shadow lengthens over the Levant.",
+        scripture: "Isaiah 17:1-3",
+        scriptureText: "Behold, Damascus will cease from being a city, and it will be a ruinous heap. The cities of Aroer are forsaken...",
+        conqueredBy: { aram: 'assyria' },
+        highlights: ['aram', 'assyria'],
+        arrows: [{from: {x: 55, y: 28}, to: {x: 42, y: 32}, color: '#7a8c72'}],
+        conquestText: "Damascus falls to Assyria"
+      },
+      {
+        id: 3, title: "Israel Conquered", year: "722 BC",
+        description: "The Northern Kingdom falls to Shalmaneser V and Sargon II. The ten tribes are scattered across the Assyrian empire. Now Assyria's border touches Judah directly from the north.",
+        scripture: "Isaiah 9:8-12; 10:11",
+        scriptureText: "The Lord sent a word against Jacob, and it has fallen on Israel... Shall I not do to Jerusalem and her idols as I have done to Samaria and her idols?",
+        conqueredBy: { aram: 'assyria', israel: 'assyria' },
+        highlights: ['israel', 'judah'],
+        arrows: [{from: {x: 42, y: 32}, to: {x: 30, y: 44}, color: '#7a8c72'}],
+        conquestText: "Israel conquered—Samaria falls to Assyria"
+      },
+      {
+        id: 4, title: "Philistia Subjugated", year: "~715 BC",
+        description: "The Philistine cities—Gaza, Ashkelon, Ashdod, Ekron—fall under Assyrian dominion. Judah's western flank is now exposed. The coastal route to Egypt lies in Assyrian hands.",
+        scripture: "Isaiah 14:28-31",
+        scriptureText: "Do not rejoice, all you of Philistia, because the rod that struck you is broken; for out of the serpent's roots will come forth a viper...",
+        conqueredBy: { aram: 'assyria', israel: 'assyria', philistia: 'assyria' },
+        highlights: ['philistia', 'judah'],
+        arrows: [{from: {x: 30, y: 44}, to: {x: 20, y: 55}, color: '#7a8c72'}],
+        conquestText: "Philistia falls under Assyrian control"
+      },
+      {
+        id: 5, title: "Moab's Devastation", year: "~715 BC",
+        description: "Moab, east of the Dead Sea, faces utter devastation. Isaiah weeps over their destruction—'my heart cries out for Moab'—showing God's compassion even in judgment.",
+        scripture: "Isaiah 15:1-5; 16:11",
+        scriptureText: "In the night Ar of Moab is laid waste and destroyed... Therefore my heart shall resound like a harp for Moab, and my inner being for Kir Heres.",
+        conqueredBy: { aram: 'assyria', israel: 'assyria', philistia: 'assyria', moab: 'assyria' },
+        highlights: ['moab', 'judah'],
+        arrows: [{from: {x: 55, y: 45}, to: {x: 45, y: 62}, color: '#7a8c72'}],
+        conquestText: "Moab devastated"
+      },
+      {
+        id: 6, title: "Ammon Under the Shadow", year: "~715 BC",
+        description: "Ammon, the children of Lot east of the Jordan, cannot escape Assyria's reach. Another buffer between Judah and the empire crumbles.",
+        scripture: "Isaiah 11:14",
+        scriptureText: "They shall plunder the people of the East together; they shall lay their hand on Edom and Moab, and the people of Ammon shall obey them.",
+        conqueredBy: { aram: 'assyria', israel: 'assyria', philistia: 'assyria', moab: 'assyria', ammon: 'assyria' },
+        highlights: ['ammon', 'judah'],
+        arrows: [{from: {x: 55, y: 38}, to: {x: 45, y: 50}, color: '#7a8c72'}],
+        conquestText: "Ammon falls under Assyrian dominion"
+      },
+      {
+        id: 7, title: "Phoenicia's Pride Broken", year: "~715 BC",
+        description: "Tyre and Sidon, the great merchant cities of Phoenicia, are humbled. Their ships once ruled the Mediterranean; now they pay tribute to Nineveh. Tyre will be forgotten for seventy years.",
+        scripture: "Isaiah 23:1-5, 15",
+        scriptureText: "Wail, O ships of Tarshish! For Tyre is laid waste... It will be in that day that Tyre will be forgotten seventy years.",
+        conqueredBy: { aram: 'assyria', israel: 'assyria', philistia: 'assyria', moab: 'assyria', ammon: 'assyria', phoenicia: 'assyria' },
+        highlights: ['phoenicia', 'judah'],
+        arrows: [{from: {x: 42, y: 32}, to: {x: 30, y: 32}, color: '#7a8c72'}],
+        conquestText: "Tyre and Sidon submit to Assyria"
+      },
+      {
+        id: 8, title: "Egypt and Cush Threatened", year: "~714 BC",
+        description: "Isaiah walks naked and barefoot for three years as a sign: Egypt and Cush, though powerful, will be led away as captives. Judah must not trust in their alliance.",
+        scripture: "Isaiah 20:3-4",
+        scriptureText: "Just as My servant Isaiah has walked naked and barefoot three years for a sign... so shall the king of Assyria lead away the Egyptians as prisoners.",
+        conqueredBy: { aram: 'assyria', israel: 'assyria', philistia: 'assyria', moab: 'assyria', ammon: 'assyria', phoenicia: 'assyria' },
+        highlights: ['egypt', 'cush', 'judah'],
+        arrows: [{from: {x: 20, y: 55}, to: {x: 12, y: 72}, color: '#7a8c72', style: 'dashed'}],
+        threatened: ['egypt', 'cush']
+      },
+      {
+        id: 9, title: "Arabia's Burden", year: "~700 BC",
+        description: "Even the desert tribes cannot hide from judgment. The caravans of Dedanites flee, the glory of Kedar fails. Within a year, the Arabian tribes bow to Assyria.",
+        scripture: "Isaiah 21:13-17",
+        scriptureText: "The burden against Arabia... Within a year, according to the years of a hired man, all the glory of Kedar will fail.",
+        conqueredBy: { aram: 'assyria', israel: 'assyria', philistia: 'assyria', moab: 'assyria', ammon: 'assyria', phoenicia: 'assyria', arabia: 'assyria' },
+        highlights: ['arabia', 'judah'],
+        arrows: [{from: {x: 48, y: 56}, to: {x: 55, y: 85}, color: '#7a8c72'}],
+        conquestText: "Arabia's tribes submit"
+      },
+      {
+        id: 10, title: "Edom Falls", year: "~700 BC",
+        description: "Edom, the descendants of Esau south of the Dead Sea, falls under Assyrian control. Judah is now completely encircled—an island of gold in a sea of Assyrian olive.",
+        scripture: "Isaiah 21:11-12",
+        scriptureText: "The burden against Dumah: He calls to me out of Seir, 'Watchman, what of the night? Watchman, what of the night?'",
+        conqueredBy: { aram: 'assyria', israel: 'assyria', philistia: 'assyria', moab: 'assyria', ammon: 'assyria', phoenicia: 'assyria', arabia: 'assyria', edom: 'assyria' },
+        highlights: ['edom', 'judah'],
+        arrows: [{from: {x: 45, y: 62}, to: {x: 38, y: 78}, color: '#7a8c72'}],
+        conquestText: "Edom falls—Judah now completely surrounded!"
+      },
+      {
+        id: 11, title: "The Siege of Jerusalem", year: "701 BC",
+        description: "Sennacherib's army surrounds Jerusalem. The Rabshakeh mocks: 'Has any god delivered his land from my hand?' Every nation has fallen. But Hezekiah spreads the letter before the LORD and prays...",
+        scripture: "Isaiah 36:18-20; 37:14-20",
+        scriptureText: "Do not let Hezekiah deceive you... Where are the gods of Hamath and Arpad? Where are the gods of Sepharvaim? Have they delivered Samaria from my hand?",
+        conqueredBy: { aram: 'assyria', israel: 'assyria', philistia: 'assyria', moab: 'assyria', ammon: 'assyria', phoenicia: 'assyria', arabia: 'assyria', edom: 'assyria' },
+        highlights: ['judah', 'assyria'],
+        arrows: [{from: {x: 55, y: 38}, to: {x: 30, y: 55}, color: '#7a8c72', blocked: true}],
+        siege: true
+      },
+      {
+        id: 12, title: "The Angel of the LORD", year: "701 BC",
+        description: "In one night, the Angel of the LORD strikes 185,000 Assyrians. The empire that swallowed nations meets its limit at Zion's walls. Jerusalem stands—the only unconquered city.",
+        scripture: "Isaiah 37:36-38",
+        scriptureText: "Then the angel of the LORD went out, and killed in the camp of the Assyrians one hundred and eighty-five thousand; and when people arose early in the morning, there were the corpses—all dead.",
+        conqueredBy: { aram: 'assyria', israel: 'assyria', philistia: 'assyria', moab: 'assyria', ammon: 'assyria', phoenicia: 'assyria', arabia: 'assyria', edom: 'assyria' },
+        highlights: ['judah'],
+        divineVictory: true,
+        victory: true
+      },
+      {
+        id: 13, title: "Assyria's Own Judgment", year: "~700 BC (Prophesied)",
+        description: "The rod of God's anger will itself be broken. Assyria's arrogance in exceeding its mandate brings divine judgment. The empire will fall—not to another army, but to God's decree.",
+        scripture: "Isaiah 10:12-19",
+        scriptureText: "When the Lord has performed all His work on Mount Zion and on Jerusalem, He will punish the fruit of the arrogant heart of the king of Assyria, and the glory of his haughty looks.",
+        conqueredBy: { aram: 'assyria', israel: 'assyria', philistia: 'assyria', moab: 'assyria', ammon: 'assyria', phoenicia: 'assyria', arabia: 'assyria', edom: 'assyria' },
+        highlights: ['assyria'],
+        divineJudgment: 'assyria',
+        futureEvent: true
+      },
+      {
+        id: 14, title: "Babylon's Rise Foretold", year: "~700 BC (Prophesied)",
+        description: "Isaiah sees beyond Assyria to another empire—Babylon will rise, conquer Assyria, and even take Judah captive. Yet Babylon too is destined for destruction.",
+        scripture: "Isaiah 13:1, 17-19",
+        scriptureText: "The burden against Babylon... Behold, I will stir up the Medes against them... And Babylon, the glory of kingdoms, will be as when God overthrew Sodom and Gomorrah.",
+        conqueredBy: { aram: 'assyria', israel: 'assyria', philistia: 'assyria', moab: 'assyria', ammon: 'assyria', phoenicia: 'assyria', arabia: 'assyria', edom: 'assyria' },
+        highlights: ['babylon', 'media'],
+        futureEvent: true,
+        futureRise: 'babylon'
+      },
+      {
+        id: 15, title: "Edom's Final Desolation", year: "Prophesied",
+        description: "Edom faces permanent devastation by divine judgment. The ancient enmity between Esau and Jacob reaches its final conclusion. Bozrah's smoke will rise forever.",
+        scripture: "Isaiah 34:5-10",
+        scriptureText: "My sword shall be bathed in heaven; indeed it shall come down on Edom... Its land shall become burning pitch; it shall not be quenched night or day.",
+        conqueredBy: { aram: 'assyria', israel: 'assyria', philistia: 'assyria', moab: 'assyria', ammon: 'assyria', phoenicia: 'assyria', arabia: 'assyria', edom: 'divine' },
+        highlights: ['edom'],
+        divineJudgment: 'edom',
+        futureEvent: true
+      },
+      {
+        id: 16, title: "Cyrus: God's Anointed", year: "539 BC (Prophesied)",
+        description: "150 years before his birth, Isaiah names Cyrus as God's anointed shepherd. The Persian king will conquer Babylon and decree: 'Let God's people return to Jerusalem.'",
+        scripture: "Isaiah 44:28; 45:1-4",
+        scriptureText: "Who says of Cyrus, 'He is My shepherd, and he shall perform all My pleasure,' saying to Jerusalem, 'You shall be built,' and to the temple, 'Your foundation shall be laid.'",
+        conqueredBy: { aram: 'persia', israel: 'persia', philistia: 'persia', moab: 'persia', ammon: 'persia', phoenicia: 'persia', arabia: 'persia', edom: 'persia', babylon: 'persia', assyria: 'persia' },
+        highlights: ['babylon', 'judah', 'media'],
+        futureEvent: true,
+        conquestText: "Babylon falls to Cyrus—God's people will return!"
+      },
+      {
+        id: 17, title: "Zion Restored: All Nations Stream", year: "The Messianic Age",
+        description: "The ultimate vision: the mountain of the LORD established above all. Nations that once warred now stream to Zion to learn God's ways. Swords become plowshares; spears become pruning hooks.",
+        scripture: "Isaiah 2:2-4; 60:1-3",
+        scriptureText: "Now it shall come to pass in the latter days that the mountain of the LORD's house shall be established on the top of the mountains... and all nations shall flow to it.",
+        conqueredBy: {},
+        highlights: ['judah'],
+        restoration: true,
+        allNationsToZion: true
+      }
+    ];
+
+    // Map Component
+    const AncientMap = ({ conqueredBy, highlights, arrows, divineJudgment, futureEvent, restoration, allNationsToZion, siege, victory, threatened, futureRise, divineVictory }) => {
+      
+      const getTerritoryFill = (nationKey, nation) => {
+        if (restoration) return nation.color;
+        if (divineJudgment === nationKey) return '#ff6b35';
+        if (futureRise === nationKey) return nation.color;
+        
+        const conqueror = conqueredBy[nationKey];
+        if (conqueror === 'assyria') return empireColors.assyria;
+        if (conqueror === 'babylon') return empireColors.babylon;
+        if (conqueror === 'persia') return empireColors.persia;
+        if (conqueror === 'divine') return '#4a2a2a';
+        
+        return nation.color;
+      };
+
+      const getTerritoryStroke = (nationKey, nation) => {
+        if (highlights.includes(nationKey)) return '#D4AF37';
+        if (conqueredBy[nationKey]) return '#2a2a2a';
+        return '#3d2e1e';
+      };
+
+      const getTerritoryStrokeWidth = (nationKey) => {
+        if (highlights.includes(nationKey)) return 1.2;
+        return 0.5;
+      };
+
+      // Count conquests for display
+      const assyrianTerritories = Object.values(conqueredBy).filter(c => c === 'assyria').length;
+      
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          <defs>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="0.8" result="coloredBlur"/>
+              <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="strongGlow">
+              <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+              <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <radialGradient id="fireGradient">
+              <stop offset="0%" stopColor="#ff6b35"/>
+              <stop offset="50%" stopColor="#f72c25"/>
+              <stop offset="100%" stopColor="#2d0c0c"/>
+            </radialGradient>
+            <radialGradient id="victoryGlow">
+              <stop offset="0%" stopColor="#ffd700"/>
+              <stop offset="50%" stopColor="#D4AF37"/>
+              <stop offset="100%" stopColor="transparent"/>
+            </radialGradient>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#7a8c72"/>
+            </marker>
+            <marker id="arrowhead-gold" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#D4AF37"/>
+            </marker>
+            <marker id="arrowhead-persia" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#6b8e9f"/>
+            </marker>
+          </defs>
+          
+          {/* Background - land */}
+          <rect width="100" height="100" fill="#d4c4a8"/>
+          
+          {/* Mediterranean Sea */}
+          <path d="M 0 15 Q 8 18, 15 22 Q 22 28, 22 35 Q 20 45, 12 52 L 0 52 Z" fill="#7fb5c9" opacity="0.7"/>
+          
+          {/* Persian Gulf */}
+          <path d="M 95 55 Q 100 60, 100 75 L 95 75 Q 92 65, 88 60 Z" fill="#7fb5c9" opacity="0.6"/>
+          
+          {/* Red Sea */}
+          <path d="M 15 80 Q 18 88, 15 100 L 10 100 Q 12 88, 10 80 Z" fill="#7fb5c9" opacity="0.6"/>
+          
+          {/* Dead Sea */}
+          <ellipse cx={deadSea.x} cy={deadSea.y} rx={deadSea.width/2} ry={deadSea.height/2} fill="#5a9ab0" opacity="0.8"/>
+          
+          {/* Sea of Galilee */}
+          <ellipse cx="35" cy="42" rx="1.5" ry="2.5" fill="#7fb5c9" opacity="0.8"/>
+          
+          {/* Nile River */}
+          <path d="M 12 55 Q 10 65, 12 75 Q 8 85, 10 100" stroke="#7fb5c9" strokeWidth="1.5" fill="none" opacity="0.8"/>
+          <path d="M 12 55 Q 8 58, 5 62" stroke="#7fb5c9" strokeWidth="1" fill="none" opacity="0.6"/>
+          
+          {/* Tigris & Euphrates */}
+          <path d="M 60 5 Q 68 20, 75 35 Q 80 50, 88 65" stroke="#7fb5c9" strokeWidth="1" fill="none" opacity="0.7"/>
+          <path d="M 52 5 Q 62 20, 70 38 Q 78 52, 85 68" stroke="#7fb5c9" strokeWidth="1" fill="none" opacity="0.7"/>
+          
+          {/* Jordan River */}
+          <path d="M 35 44 Q 37 50, 38 55" stroke="#7fb5c9" strokeWidth="0.6" fill="none" opacity="0.7"/>
+          
+          {/* All nations to Zion lines */}
+          {allNationsToZion && Object.entries(nations).filter(([key]) => !nations[key].contextOnly).map(([key, nation]) => (
+            <path
+              key={`stream-${key}`}
+              d={`M ${nation.labelX} ${nation.labelY} L ${jerusalem.x} ${jerusalem.y}`}
+              stroke="#D4AF37"
+              strokeWidth="0.5"
+              fill="none"
+              opacity="0.6"
+              strokeDasharray="2,1"
+              markerEnd="url(#arrowhead-gold)"
+            >
+              <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="3s" repeatCount="indefinite"/>
+            </path>
+          ))}
+          
+          {/* Draw territories */}
+          {Object.entries(nations).map(([key, nation]) => (
+            <g key={key}>
+              {/* Territory fill */}
+              <path
+                d={nation.path}
+                fill={getTerritoryFill(key, nation)}
+                opacity={nation.contextOnly ? 0.4 : 0.75}
+                stroke={getTerritoryStroke(key, nation)}
+                strokeWidth={getTerritoryStrokeWidth(key)}
+                strokeDasharray={threatened && threatened.includes(key) ? "2,1" : "none"}
+                className="territory-path"
+              />
+              
+              {/* Highlight glow for selected nations */}
+              {highlights.includes(key) && (
+                <path
+                  d={nation.path}
+                  fill="none"
+                  stroke="#D4AF37"
+                  strokeWidth="2"
+                  opacity="0.5"
+                  filter="url(#glow)"
+                />
+              )}
+              
+              {/* Divine judgment fire */}
+              {divineJudgment === key && (
+                <path d={nation.path} fill="url(#fireGradient)" opacity="0.6">
+                  <animate attributeName="opacity" values="0.4;0.7;0.4" dur="1s" repeatCount="indefinite"/>
+                </path>
+              )}
+              
+              {/* Future rise indicator */}
+              {futureRise === key && (
+                <path d={nation.path} fill="none" stroke="#8b7355" strokeWidth="1.5" strokeDasharray="4,2" opacity="0.8">
+                  <animate attributeName="stroke-dashoffset" from="0" to="-12" dur="2s" repeatCount="indefinite"/>
+                </path>
+              )}
+            </g>
+          ))}
+          
+          {/* Siege around Jerusalem */}
+          {siege && (
+            <g>
+              <circle cx={jerusalem.x} cy={jerusalem.y} r="10" fill="none" stroke="#7a8c72" strokeWidth="1.5" strokeDasharray="3,2" opacity="0.9">
+                <animate attributeName="stroke-dashoffset" from="0" to="-10" dur="1s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx={jerusalem.x} cy={jerusalem.y} r="13" fill="none" stroke="#7a8c72" strokeWidth="0.8" strokeDasharray="2,2" opacity="0.6">
+                <animate attributeName="stroke-dashoffset" from="0" to="8" dur="1.5s" repeatCount="indefinite"/>
+              </circle>
+              {/* Army markers */}
+              {[30, 90, 150, 210, 270, 330].map((angle, i) => {
+                const rad = (angle * Math.PI) / 180;
+                const x = jerusalem.x + Math.cos(rad) * 12;
+                const y = jerusalem.y + Math.sin(rad) * 12;
+                return (
+                  <g key={i}>
+                    <circle cx={x} cy={y} r="1.2" fill="#7a8c72" opacity="0.9">
+                      <animate attributeName="r" values="1;1.5;1" dur="1s" repeatCount="indefinite" begin={`${i * 0.15}s`}/>
+                    </circle>
+                  </g>
+                );
+              })}
+            </g>
+          )}
+          
+          {/* Divine victory effect */}
+          {(victory || divineVictory) && (
+            <g>
+              <circle cx={jerusalem.x} cy={jerusalem.y} r="15" fill="url(#victoryGlow)" opacity="0.5">
+                <animate attributeName="r" values="12;18;12" dur="2s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.3;0.6;0.3" dur="2s" repeatCount="indefinite"/>
+              </circle>
+              {/* Light rays */}
+              {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
+                const rad = (angle * Math.PI) / 180;
+                const x1 = jerusalem.x + Math.cos(rad) * 4;
+                const y1 = jerusalem.y + Math.sin(rad) * 4;
+                const x2 = jerusalem.x + Math.cos(rad) * 18;
+                const y2 = jerusalem.y + Math.sin(rad) * 18;
+                return (
+                  <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#D4AF37" strokeWidth="0.6" opacity="0.7">
+                    <animate attributeName="opacity" values="0.4;0.9;0.4" dur="1.5s" repeatCount="indefinite" begin={`${i * 0.1}s`}/>
+                  </line>
+                );
+              })}
+            </g>
+          )}
+          
+          {/* Restoration mega glow */}
+          {restoration && (
+            <g>
+              <circle cx={jerusalem.x} cy={jerusalem.y} r="30" fill="url(#victoryGlow)" opacity="0.3">
+                <animate attributeName="r" values="25;35;25" dur="3s" repeatCount="indefinite"/>
+              </circle>
+            </g>
+          )}
+          
+          {/* Conquest arrows */}
+          {arrows && arrows.map((arrow, i) => {
+            const midX = (arrow.from.x + arrow.to.x) / 2;
+            const midY = (arrow.from.y + arrow.to.y) / 2 - 4;
+            const isPersia = arrow.color === '#6b8e9f';
+            return (
+              <g key={i}>
+                <path
+                  d={`M ${arrow.from.x} ${arrow.from.y} Q ${midX} ${midY}, ${arrow.to.x} ${arrow.to.y}`}
+                  stroke={arrow.blocked ? "#D4AF37" : arrow.color || '#7a8c72'}
+                  strokeWidth={arrow.blocked ? "1.5" : "1.2"}
+                  fill="none"
+                  strokeDasharray={arrow.style === 'dashed' ? "4,2" : "none"}
+                  markerEnd={arrow.blocked ? "url(#arrowhead-gold)" : isPersia ? "url(#arrowhead-persia)" : "url(#arrowhead)"}
+                  opacity="0.9"
+                />
+                {arrow.blocked && (
+                  <g>
+                    <circle cx={arrow.to.x} cy={arrow.to.y} r="4" fill="none" stroke="#D4AF37" strokeWidth="2" opacity="0.9">
+                      <animate attributeName="r" values="3;5;3" dur="1s" repeatCount="indefinite"/>
+                    </circle>
+                    <line x1={arrow.to.x - 2.5} y1={arrow.to.y - 2.5} x2={arrow.to.x + 2.5} y2={arrow.to.y + 2.5} stroke="#D4AF37" strokeWidth="2"/>
+                    <line x1={arrow.to.x + 2.5} y1={arrow.to.y - 2.5} x2={arrow.to.x - 2.5} y2={arrow.to.y + 2.5} stroke="#D4AF37" strokeWidth="2"/>
+                  </g>
+                )}
+              </g>
+            );
+          })}
+          
+          {/* Jerusalem marker - always prominent */}
+          <g filter="url(#strongGlow)">
+            <circle 
+              cx={jerusalem.x} 
+              cy={jerusalem.y} 
+              r={victory || restoration ? 3.5 : 2.5} 
+              fill="#D4AF37" 
+              stroke="#fff" 
+              strokeWidth="0.8"
+            >
+              {(victory || restoration) && (
+                <animate attributeName="r" values="2.5;4;2.5" dur="2s" repeatCount="indefinite"/>
+              )}
+            </circle>
+            <text x={jerusalem.x} y={jerusalem.y + 0.8} textAnchor="middle" fontSize="2.5" fill="#3d2e1e" fontFamily="serif">✡</text>
+          </g>
+          
+          {/* City markers */}
+          {Object.entries(nations).filter(([k, n]) => n.cityName && !n.contextOnly).map(([key, nation]) => (
+            <g key={`city-${key}`}>
+              <circle cx={nation.cityX} cy={nation.cityY} r="0.8" fill="#2a2a2a"/>
+            </g>
+          ))}
+          
+          {/* Nation labels */}
+          {Object.entries(nations).map(([key, nation]) => (
+            <text
+              key={`label-${key}`}
+              x={nation.labelX}
+              y={nation.labelY}
+              textAnchor="middle"
+              fontSize={nation.isJudah ? "2.8" : nation.contextOnly ? "2" : "2.2"}
+              fill={nation.contextOnly ? "#6a6a6a" : highlights.includes(key) ? "#3d2e1e" : "#4a4a4a"}
+              fontFamily="serif"
+              fontWeight={highlights.includes(key) || nation.isJudah ? "bold" : "normal"}
+              fontStyle={nation.contextOnly ? "italic" : "normal"}
+            >
+              {nation.name}
+            </text>
+          ))}
+          
+          {/* Jerusalem label */}
+          <text x={jerusalem.x} y={jerusalem.y - 5} textAnchor="middle" fontSize="2.2" fill="#3d2e1e" fontFamily="serif" fontWeight="bold">
+            Jerusalem
+          </text>
+          
+          {/* Compass */}
+          <g transform="translate(92, 12)">
+            <circle cx="0" cy="0" r="4" fill="rgba(244,228,188,0.9)" stroke="#8B7355" strokeWidth="0.3"/>
+            <line x1="0" y1="-4" x2="0" y2="4" stroke="#8B7355" strokeWidth="0.3"/>
+            <line x1="-4" y1="0" x2="4" y2="0" stroke="#8B7355" strokeWidth="0.3"/>
+            <polygon points="0,-3.5 -0.8,-0.8 0,-1.5 0.8,-0.8" fill="#8B0000"/>
+            <text x="0" y="-5" textAnchor="middle" fontSize="1.8" fill="#5c4a32" fontFamily="serif">N</text>
+          </g>
+          
+          {/* Title */}
+          <text x="50" y="4" textAnchor="middle" fontSize="2.8" fill="#3d2e1e" fontFamily="serif" fontWeight="bold">
+            ISAIAH'S WORLD
+          </text>
+          
+          {/* Legend for conquered territories */}
+          {assyrianTerritories > 0 && !restoration && (
+            <g transform="translate(3, 92)">
+              <rect x="0" y="0" width="25" height="6" fill="rgba(244,228,188,0.9)" rx="1"/>
+              <rect x="1" y="1.5" width="3" height="3" fill="#7a8c72"/>
+              <text x="5.5" y="4" fontSize="1.8" fill="#3d2e1e" fontFamily="serif">= Assyrian Empire</text>
+            </g>
+          )}
+          
+          {/* Future event indicator */}
+          {futureEvent && (
+            <text x="50" y="98" textAnchor="middle" fontSize="1.8" fill="#4A0E4E" fontFamily="serif" fontStyle="italic">
+              ✦ Prophetic Vision ✦
+            </text>
+          )}
+        </svg>
+      );
+    };
+
+    // Main App
+    function App() {
+      const [currentEventIndex, setCurrentEventIndex] = useState(0);
+      const [isAnimating, setIsAnimating] = useState(false);
+      const currentEvent = events[currentEventIndex];
+      
+      // Count conquered nations
+      const conqueredCount = Object.keys(currentEvent.conqueredBy).length;
+      const mainNations = Object.keys(nations).filter(k => !nations[k].contextOnly && k !== 'judah').length;
+      
+      const goToNext = () => {
+        if (currentEventIndex < events.length - 1 && !isAnimating) {
+          setIsAnimating(true);
+          setTimeout(() => { setCurrentEventIndex(prev => prev + 1); setIsAnimating(false); }, 300);
+        }
+      };
+      
+      const goToPrevious = () => {
+        if (currentEventIndex > 0 && !isAnimating) {
+          setIsAnimating(true);
+          setTimeout(() => { setCurrentEventIndex(prev => prev - 1); setIsAnimating(false); }, 300);
+        }
+      };
+      
+      const goToEvent = (index) => {
+        if (!isAnimating) {
+          setIsAnimating(true);
+          setTimeout(() => { setCurrentEventIndex(index); setIsAnimating(false); }, 300);
+        }
+      };
+
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goToNext(); }
+          else if (e.key === 'ArrowLeft') { e.preventDefault(); goToPrevious(); }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [currentEventIndex, isAnimating]);
+      
+      return (
+        <div className="min-h-screen font-serif">
+          <div className="container mx-auto px-4 py-6 max-w-7xl">
+            {/* Header */}
+            <header className="text-center mb-6">
+              <h1 className="cinzel text-3xl md:text-4xl font-bold mb-2" style={{color: '#D4AF37', textShadow: '2px 2px 4px rgba(0,0,0,0.5)'}}>
+                The Prophecies of Isaiah
+              </h1>
+              <p className="text-lg italic" style={{color: '#c9b896'}}>
+                Conquests, Judgments & The Unconquered City
+              </p>
+            </header>
+            
+            {/* Main Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Map */}
+              <div className="parchment-bg rounded-lg p-4 scroll-border map-container">
+                <div className={`transition-opacity duration-300 ${isAnimating ? 'opacity-50' : 'opacity-100'}`}>
+                  <AncientMap 
+                    conqueredBy={currentEvent.conqueredBy}
+                    highlights={currentEvent.highlights}
+                    arrows={currentEvent.arrows}
+                    divineJudgment={currentEvent.divineJudgment}
+                    futureEvent={currentEvent.futureEvent}
+                    restoration={currentEvent.restoration}
+                    allNationsToZion={currentEvent.allNationsToZion}
+                    siege={currentEvent.siege}
+                    victory={currentEvent.victory}
+                    divineVictory={currentEvent.divineVictory}
+                    threatened={currentEvent.threatened}
+                    futureRise={currentEvent.futureRise}
+                  />
+                </div>
+                
+                {/* Legend */}
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs" style={{color: '#5c4a32'}}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-3 rounded-sm" style={{background: '#D4AF37', border: '1px solid #8B7355'}}></div>
+                    <span>Judah (Unconquered)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-3 rounded-sm" style={{background: '#7a8c72', border: '1px solid #5a6a52'}}></div>
+                    <span>Assyrian Territory</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-3 rounded-sm" style={{background: '#6b8e9f', border: '1px solid #4a6a7a'}}></div>
+                    <span>Persian Territory</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-3 rounded-sm border-2 border-yellow-500" style={{background: 'transparent'}}></div>
+                    <span>Highlighted Nation</span>
+                  </div>
+                </div>
+                
+                {/* Conquest counter */}
+                {conqueredCount > 0 && !currentEvent.restoration && (
+                  <div className="mt-3 text-center">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full" style={{background: 'rgba(122, 140, 114, 0.2)'}}>
+                      <span className="text-sm font-semibold" style={{color: '#5a6a52'}}>
+                        ⚔️ Territories Under Foreign Rule: {conqueredCount}/{mainNations}
+                      </span>
+                      {conqueredCount >= mainNations - 1 && !currentEvent.victory && (
+                        <span className="text-xs px-2 py-0.5 rounded-full" style={{background: '#D4AF37', color: '#3d2e1e'}}>
+                          Only Judah Remains!
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Details Panel */}
+              <div className="parchment-bg rounded-lg p-6 scroll-border flex flex-col">
+                <div className={`flex-1 fade-in ${isAnimating ? 'opacity-0' : ''}`} key={currentEventIndex}>
+                  <div className="flex items-start justify-between mb-4">
+                    <span className="text-sm font-semibold px-3 py-1 rounded-full" style={{
+                      background: currentEvent.futureEvent ? 'linear-gradient(135deg, #4A0E4E, #2c1810)' : 
+                                 currentEvent.victory ? 'linear-gradient(135deg, #D4AF37, #8B7355)' :
+                                 'linear-gradient(135deg, #8B7355, #5c4a32)',
+                      color: '#f4e4bc'
+                    }}>
+                      {currentEvent.futureEvent ? '✦ Prophetic' : currentEvent.victory ? '✦ Divine Victory' : currentEvent.year}
+                    </span>
+                    <span className="cinzel text-lg font-bold" style={{color: '#8B7355'}}>
+                      {currentEventIndex + 1} / {events.length}
+                    </span>
+                  </div>
+                  
+                  <h2 className="cinzel text-2xl md:text-3xl font-bold mb-4" style={{color: '#3d2e1e'}}>
+                    {currentEvent.title}
+                  </h2>
+                  
+                  <p className="text-lg leading-relaxed mb-6" style={{color: '#4a3c2d'}}>
+                    {currentEvent.description}
+                  </p>
+                  
+                  <div className="scripture-box p-4 rounded-r-lg mb-6">
+                    <p className="text-base font-semibold mb-2" style={{color: '#8B7355'}}>
+                      📖 {currentEvent.scripture}
+                    </p>
+                    <p className="italic text-lg leading-relaxed" style={{color: '#3d2e1e'}}>
+                      "{currentEvent.scriptureText}"
+                    </p>
+                  </div>
+                  
+                  {currentEvent.conquestText && (
+                    <div className="mb-4 p-3 rounded" style={{background: 'rgba(122, 140, 114, 0.15)'}}>
+                      <p className="font-semibold text-sm" style={{color: '#5a6a52'}}>
+                        ⚔️ {currentEvent.conquestText}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {currentEvent.siege && (
+                    <div className="mb-4 p-3 rounded" style={{background: 'rgba(122, 140, 114, 0.2)', border: '1px dashed #7a8c72'}}>
+                      <p className="font-semibold text-sm" style={{color: '#5a6a52'}}>
+                        🏰 Jerusalem besieged — Every surrounding nation has fallen to Assyria. The empire demands surrender.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {currentEvent.victory && (
+                    <div className="mb-4 p-3 rounded" style={{background: 'rgba(212, 175, 55, 0.2)', border: '1px solid #D4AF37'}}>
+                      <p className="font-semibold text-sm" style={{color: '#8B7355'}}>
+                        ✨ 185,000 Assyrians slain in one night — Jerusalem stands unconquered! God defends His city.
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Navigation */}
+                <div className="flex items-center justify-between pt-4 border-t" style={{borderColor: '#c9b896'}}>
+                  <button onClick={goToPrevious} disabled={currentEventIndex === 0}
+                    className="nav-btn px-5 py-2.5 rounded-lg flex items-center gap-2" style={{color: '#f4e4bc'}}>
+                    <span className="text-xl">←</span><span className="hidden sm:inline">Previous</span>
+                  </button>
+                  
+                  <div className="flex gap-1.5 flex-wrap justify-center max-w-xs">
+                    {events.map((event, index) => (
+                      <button key={event.id} onClick={() => goToEvent(index)}
+                        className={`timeline-dot w-2.5 h-2.5 rounded-full transition-all ${index === currentEventIndex ? 'active' : ''}`}
+                        style={{ 
+                          background: index === currentEventIndex ? '#D4AF37' : 
+                                     event.victory ? '#D4AF37' :
+                                     event.restoration ? '#D4AF37' :
+                                     Object.keys(event.conqueredBy).length > 0 ? '#7a8c72' : '#8B7355',
+                          opacity: index === currentEventIndex ? 1 : 0.7
+                        }}
+                        title={event.title}
+                      />
+                    ))}
+                  </div>
+                  
+                  <button onClick={goToNext} disabled={currentEventIndex === events.length - 1}
+                    className="nav-btn px-5 py-2.5 rounded-lg flex items-center gap-2" style={{color: '#f4e4bc'}}>
+                    <span className="hidden sm:inline">Next</span><span className="text-xl">→</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Timeline Bar */}
+            <div className="mt-6 parchment-bg rounded-lg p-4 scroll-border overflow-x-auto">
+              <div className="flex items-center justify-between min-w-max gap-1">
+                {events.map((event, index) => (
+                  <button key={event.id} onClick={() => goToEvent(index)}
+                    className={`flex flex-col items-center px-1.5 py-1 rounded transition-all hover:bg-black/5 ${index === currentEventIndex ? 'bg-black/10' : ''}`}
+                    style={{minWidth: '45px'}}>
+                    <div 
+                      className={`w-3 h-3 rounded-full mb-1 transition-all ${index === currentEventIndex ? 'ring-2 ring-offset-1' : ''}`}
+                      style={{
+                        background: event.restoration ? '#D4AF37' : 
+                                   event.victory ? '#D4AF37' :
+                                   event.divineJudgment ? '#ff6b35' : 
+                                   event.siege ? '#7a8c72' :
+                                   Object.keys(event.conqueredBy).length > 0 ? '#7a8c72' : '#8B7355',
+                        ringColor: '#D4AF37'
+                      }}
+                    />
+                    <span className="text-xs font-semibold whitespace-nowrap" style={{
+                      color: index === currentEventIndex ? '#3d2e1e' : '#8B7355',
+                      fontSize: '0.65rem'
+                    }}>
+                      {event.year.replace(' (Prophesied)', '').replace('~', '').substring(0, 8)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <p className="text-center mt-4 text-sm" style={{color: '#8B7355'}}>
+              Use ← → arrow keys or spacebar to navigate • Watch as Judah becomes surrounded yet remains unconquered
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
