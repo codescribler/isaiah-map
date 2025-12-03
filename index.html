@@ -841,6 +841,21 @@
                     </div>
                   </div>
                 )}
+
+                {/* Mobile Navigation - visible only on smaller screens */}
+                <div className="mt-4 flex items-center justify-between lg:hidden">
+                  <button onClick={goToPrevious} disabled={currentEventIndex === 0}
+                    className="nav-btn px-4 py-2 rounded-lg flex items-center gap-2" style={{color: '#f4e4bc'}}>
+                    <span className="text-lg">←</span><span>Back</span>
+                  </button>
+                  <span className="cinzel text-sm font-bold" style={{color: '#5c4a32'}}>
+                    {currentEventIndex + 1} / {events.length}
+                  </span>
+                  <button onClick={goToNext} disabled={currentEventIndex === events.length - 1}
+                    className="nav-btn px-4 py-2 rounded-lg flex items-center gap-2" style={{color: '#f4e4bc'}}>
+                    <span>Next</span><span className="text-lg">→</span>
+                  </button>
+                </div>
               </div>
               
               {/* Details Panel */}
