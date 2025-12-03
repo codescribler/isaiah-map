@@ -438,14 +438,14 @@
               <stop offset="50%" stopColor="#D4AF37"/>
               <stop offset="100%" stopColor="transparent"/>
             </radialGradient>
-            <marker id="arrowhead" markerWidth="12" markerHeight="9" refX="10" refY="4.5" orient="auto">
-              <polygon points="0 0, 12 4.5, 0 9" fill="#2d1810" stroke="#2d1810" strokeWidth="1"/>
+            <marker id="arrowhead" markerWidth="4" markerHeight="3" refX="3.5" refY="1.5" orient="auto">
+              <polygon points="0 0, 4 1.5, 0 3" fill="#2d1810"/>
             </marker>
-            <marker id="arrowhead-gold" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
-              <polygon points="0 0, 10 4, 0 8" fill="#D4AF37" stroke="#2d1810" strokeWidth="0.5"/>
+            <marker id="arrowhead-gold" markerWidth="4" markerHeight="3" refX="3.5" refY="1.5" orient="auto">
+              <polygon points="0 0, 4 1.5, 0 3" fill="#D4AF37"/>
             </marker>
-            <marker id="arrowhead-persia" markerWidth="12" markerHeight="9" refX="10" refY="4.5" orient="auto">
-              <polygon points="0 0, 12 4.5, 0 9" fill="#3d5a6a" stroke="#1a2a3a" strokeWidth="1"/>
+            <marker id="arrowhead-persia" markerWidth="4" markerHeight="3" refX="3.5" refY="1.5" orient="auto">
+              <polygon points="0 0, 4 1.5, 0 3" fill="#3d5a6a"/>
             </marker>
           </defs>
           
@@ -605,18 +605,18 @@
                 <path
                   d={pathD}
                   stroke="#f4e4bc"
-                  strokeWidth={arrow.blocked ? "4" : "3.5"}
+                  strokeWidth={arrow.blocked ? "1.4" : "1.2"}
                   fill="none"
-                  strokeDasharray={arrow.style === 'dashed' ? "4,2" : "none"}
+                  strokeDasharray={arrow.style === 'dashed' ? "3,2" : "none"}
                   strokeLinecap="round"
                 />
                 {/* Main arrow */}
                 <path
                   d={pathD}
                   stroke={arrow.blocked ? "#D4AF37" : isPersia ? "#3d5a6a" : "#2d1810"}
-                  strokeWidth={arrow.blocked ? "2" : "1.8"}
+                  strokeWidth={arrow.blocked ? "0.8" : "0.6"}
                   fill="none"
-                  strokeDasharray={arrow.style === 'dashed' ? "4,2" : "none"}
+                  strokeDasharray={arrow.style === 'dashed' ? "3,2" : "none"}
                   markerEnd={arrow.blocked ? "url(#arrowhead-gold)" : isPersia ? "url(#arrowhead-persia)" : "url(#arrowhead)"}
                   strokeLinecap="round"
                 />
