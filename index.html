@@ -438,14 +438,14 @@
               <stop offset="50%" stopColor="#D4AF37"/>
               <stop offset="100%" stopColor="transparent"/>
             </radialGradient>
-            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-              <polygon points="0 0, 10 3.5, 0 7" fill="#7a8c72"/>
+            <marker id="arrowhead" markerWidth="12" markerHeight="9" refX="10" refY="4.5" orient="auto">
+              <polygon points="0 0, 12 4.5, 0 9" fill="#2d1810" stroke="#2d1810" strokeWidth="1"/>
             </marker>
-            <marker id="arrowhead-gold" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-              <polygon points="0 0, 8 3, 0 6" fill="#D4AF37"/>
+            <marker id="arrowhead-gold" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+              <polygon points="0 0, 10 4, 0 8" fill="#D4AF37" stroke="#2d1810" strokeWidth="0.5"/>
             </marker>
-            <marker id="arrowhead-persia" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-              <polygon points="0 0, 10 3.5, 0 7" fill="#6b8e9f"/>
+            <marker id="arrowhead-persia" markerWidth="12" markerHeight="9" refX="10" refY="4.5" orient="auto">
+              <polygon points="0 0, 12 4.5, 0 9" fill="#3d5a6a" stroke="#1a2a3a" strokeWidth="1"/>
             </marker>
           </defs>
           
@@ -598,16 +598,27 @@
             const midX = (arrow.from.x + arrow.to.x) / 2;
             const midY = (arrow.from.y + arrow.to.y) / 2 - 4;
             const isPersia = arrow.color === '#6b8e9f';
+            const pathD = `M ${arrow.from.x} ${arrow.from.y} Q ${midX} ${midY}, ${arrow.to.x} ${arrow.to.y}`;
             return (
               <g key={i}>
+                {/* Arrow outline for visibility */}
                 <path
-                  d={`M ${arrow.from.x} ${arrow.from.y} Q ${midX} ${midY}, ${arrow.to.x} ${arrow.to.y}`}
-                  stroke={arrow.blocked ? "#D4AF37" : arrow.color || '#7a8c72'}
-                  strokeWidth={arrow.blocked ? "1.5" : "1.2"}
+                  d={pathD}
+                  stroke="#f4e4bc"
+                  strokeWidth={arrow.blocked ? "4" : "3.5"}
+                  fill="none"
+                  strokeDasharray={arrow.style === 'dashed' ? "4,2" : "none"}
+                  strokeLinecap="round"
+                />
+                {/* Main arrow */}
+                <path
+                  d={pathD}
+                  stroke={arrow.blocked ? "#D4AF37" : isPersia ? "#3d5a6a" : "#2d1810"}
+                  strokeWidth={arrow.blocked ? "2" : "1.8"}
                   fill="none"
                   strokeDasharray={arrow.style === 'dashed' ? "4,2" : "none"}
                   markerEnd={arrow.blocked ? "url(#arrowhead-gold)" : isPersia ? "url(#arrowhead-persia)" : "url(#arrowhead)"}
-                  opacity="0.9"
+                  strokeLinecap="round"
                 />
                 {arrow.blocked && (
                   <g>
@@ -646,25 +657,45 @@
             </g>
           ))}
           
-          {/* Nation labels */}
+          {/* Nation labels with outline for readability */}
           {Object.entries(nations).map(([key, nation]) => (
-            <text
-              key={`label-${key}`}
-              x={nation.labelX}
-              y={nation.labelY}
-              textAnchor="middle"
-              fontSize={nation.isJudah ? "2.8" : nation.contextOnly ? "2" : "2.2"}
-              fill={nation.contextOnly ? "#6a6a6a" : highlights.includes(key) ? "#3d2e1e" : "#4a4a4a"}
-              fontFamily="serif"
-              fontWeight={highlights.includes(key) || nation.isJudah ? "bold" : "normal"}
-              fontStyle={nation.contextOnly ? "italic" : "normal"}
-            >
-              {nation.name}
-            </text>
+            <g key={`label-${key}`}>
+              {/* Text outline/shadow */}
+              <text
+                x={nation.labelX}
+                y={nation.labelY}
+                textAnchor="middle"
+                fontSize={nation.isJudah ? "2.8" : nation.contextOnly ? "2" : "2.2"}
+                fill="none"
+                stroke={nation.contextOnly ? "#d4c4a8" : "#1a0f0a"}
+                strokeWidth="0.6"
+                fontFamily="serif"
+                fontWeight={highlights.includes(key) || nation.isJudah ? "bold" : "normal"}
+                fontStyle={nation.contextOnly ? "italic" : "normal"}
+              >
+                {nation.name}
+              </text>
+              {/* Main text */}
+              <text
+                x={nation.labelX}
+                y={nation.labelY}
+                textAnchor="middle"
+                fontSize={nation.isJudah ? "2.8" : nation.contextOnly ? "2" : "2.2"}
+                fill={nation.contextOnly ? "#6a6a6a" : highlights.includes(key) ? "#ffffff" : "#f4e4bc"}
+                fontFamily="serif"
+                fontWeight={highlights.includes(key) || nation.isJudah ? "bold" : "normal"}
+                fontStyle={nation.contextOnly ? "italic" : "normal"}
+              >
+                {nation.name}
+              </text>
+            </g>
           ))}
           
           {/* Jerusalem label */}
-          <text x={jerusalem.x} y={jerusalem.y - 5} textAnchor="middle" fontSize="2.2" fill="#3d2e1e" fontFamily="serif" fontWeight="bold">
+          <text x={jerusalem.x} y={jerusalem.y - 5} textAnchor="middle" fontSize="2.2" fill="none" stroke="#1a0f0a" strokeWidth="0.6" fontFamily="serif" fontWeight="bold">
+            Jerusalem
+          </text>
+          <text x={jerusalem.x} y={jerusalem.y - 5} textAnchor="middle" fontSize="2.2" fill="#ffffff" fontFamily="serif" fontWeight="bold">
             Jerusalem
           </text>
           
