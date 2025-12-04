@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Isaiah 20–23 | Interactive Exploration</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1612 0%, #2d2319 50%, #1a1612 100%);
+      font-family: "Cormorant Garamond", Georgia, serif;
+      color: #e8dcc4;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .progress-bar {
+      display: none;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 1rem;
+      background: rgba(0,0,0,0.3);
+    }
+
+    .progress-bar.visible {
+      display: flex;
+    }
+
+    .progress-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(184, 134, 72, 0.3);
+      transition: background 0.3s;
+    }
+
+    .progress-dot.active {
+      background: #b88648;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .stage {
+      display: none;
+      max-width: 550px;
+      margin: 0 auto;
+      width: 100%;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .stage.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .label {
+      font-size: 0.8rem;
+      letter-spacing: 0.3em;
+      color: #b88648;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    h1, h2 {
+      font-family: "Cinzel", Georgia, serif;
+      font-weight: 400;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 5vw, 2.5rem);
+      margin-bottom: 1.5rem;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: #c4a574;
+      text-align: center;
+      line-height: 1.8;
+      max-width: 500px;
+      margin: 0 auto 2rem;
+    }
+
+    .question-box {
+      background: rgba(0,0,0,0.4);
+      border: 2px solid rgba(184, 134, 72, 0.5);
+      padding: 2rem;
+      max-width: 400px;
+      margin: 0 auto 2rem;
+      text-align: center;
+    }
+
+    .question-box p {
+      font-size: 1.4rem;
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    .btn-primary {
+      display: block;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #b88648 0%, #8b5e2f 100%);
+      border: none;
+      color: #1a1612;
+      padding: 1rem 2.5rem;
+      font-size: 1rem;
+      font-family: "Cinzel", Georgia, serif;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary.full-width {
+      width: 100%;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid rgba(184, 134, 72, 0.5);
+      color: #b88648;
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      transition: opacity 0.2s;
+    }
+
+    .btn-secondary:hover {
+      opacity: 0.8;
+    }
+
+    .hint {
+      text-align: center;
+      color: #a89070;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    /* Security cards */
+    .security-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .security-card {
+      background: rgba(184, 134, 72, 0.15);
+      border: 1px solid rgba(184, 134, 72, 0.4);
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .security-card.revealed {
+      background: rgba(139, 69, 47, 0.3);
+      border-color: rgba(139, 69, 47, 0.5);
+      cursor: default;
+    }
+
+    .security-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .security-icon {
+      font-size: 1.5rem;
+      transition: opacity 0.3s;
+    }
+
+    .security-card.revealed .security-icon {
+      opacity: 0.5;
+    }
+
+    .security-info {
+      flex: 1;
+    }
+
+    .security-name {
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .security-card.revealed .security-name {
+      text-decoration: line-through;
+      color: #8b6b5b;
+    }
+
+    .security-promise {
+      font-size: 0.85rem;
+      color: #a89070;
+      font-style: italic;
+      margin-top: 0.25rem;
+    }
+
+    .security-action {
+      color: #b88648;
+      font-size: 0.85rem;
+    }
+
+    .security-card.revealed .security-action {
+      color: #8b5e3f;
+      font-size: 1.2rem;
+    }
+
+    .security-fate {
+      display: none;
+      background: rgba(0,0,0,0.3);
+      padding: 0.75rem;
+      border-left: 3px solid #8b5e3f;
+      font-size: 0.9rem;
+      color: #c4a574;
+      margin-top: 0.75rem;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .security-card.revealed .security-fate {
+      display: block;
+    }
+
+    .all-fallen-message {
+      display: none;
+      text-align: center;
+      margin-top: 1.5rem;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .all-fallen-message.visible {
+      display: block;
+    }
+
+    .all-fallen-message p {
+      font-size: 1.1rem;
+      font-style: italic;
+      color: #c4a574;
+      margin-bottom: 1.5rem;
+    }
+
+    .all-fallen-message strong {
+      color: #e8dcc4;
+    }
+
+    /* Response options */
+    .response-options {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .response-option {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(184, 134, 72, 0.4);
+      padding: 1rem;
+      text-align: left;
+      cursor: pointer;
+      color: #e8dcc4;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+
+    .response-option:hover {
+      background: rgba(184, 134, 72, 0.15);
+    }
+
+    .response-option p:first-child {
+      font-size: 1.05rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .response-option p:last-child {
+      font-size: 0.85rem;
+      color: #a89070;
+    }
+
+    .response-result {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .response-result.visible {
+      display: block;
+    }
+
+    .result-box {
+      background: rgba(184, 134, 72, 0.2);
+      border: 1px solid rgba(184, 134, 72, 0.4);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .result-box.wrong {
+      background: rgba(139, 69, 47, 0.3);
+    }
+
+    .result-box p {
+      font-size: 1.1rem;
+      line-height: 1.5;
+    }
+
+    .scripture-reveal {
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .scripture-reveal.visible {
+      display: block;
+    }
+
+    .scripture-box {
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-left: 3px solid;
+    }
+
+    .scripture-box.self-reliance {
+      background: rgba(139, 94, 47, 0.2);
+      border-color: #b88648;
+    }
+
+    .scripture-box.despair {
+      background: rgba(94, 58, 47, 0.25);
+      border-color: #8b5e3f;
+    }
+
+    .scripture-box h4 {
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .scripture-box.self-reliance h4 {
+      color: #d4a85c;
+    }
+
+    .scripture-box.despair h4 {
+      color: #c47a5c;
+    }
+
+    .scripture-box .description {
+      font-size: 0.9rem;
+      color: #c4a574;
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+
+    .scripture-box .quote {
+      font-style: italic;
+      font-size: 0.95rem;
+    }
+
+    .neither-faith {
+      background: rgba(0,0,0,0.4);
+      padding: 1.25rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .neither-faith p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+
+    .neither-faith strong {
+      color: #d4a85c;
+    }
+
+    .neither-faith span {
+      color: #c4a574;
+    }
+
+    /* Leader choice */
+    .leader-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .leader-btn {
+      background: rgba(94, 58, 47, 0.3);
+      border: 1px solid rgba(139, 69, 47, 0.5);
+      padding: 1.25rem;
+      cursor: pointer;
+      color: #e8dcc4;
+      text-align: center;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      transition: all 0.2s;
+    }
+
+    .leader-btn:last-child {
+      background: rgba(139, 94, 47, 0.3);
+      border-color: rgba(184, 134, 72, 0.5);
+    }
+
+    .leader-btn:hover {
+      opacity: 0.9;
+    }
+
+    .leader-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .leader-name {
+      font-family: "Cinzel", Georgia, serif;
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .leader-role {
+      font-size: 0.8rem;
+      color: #a89070;
+    }
+
+    .leader-result {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .leader-result.visible {
+      display: block;
+    }
+
+    .leader-box {
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid;
+    }
+
+    .leader-box.shebna {
+      background: rgba(94, 58, 47, 0.25);
+      border-color: rgba(139, 69, 47, 0.4);
+    }
+
+    .leader-box.eliakim {
+      background: rgba(139, 94, 47, 0.25);
+      border-color: rgba(184, 134, 72, 0.4);
+    }
+
+    .leader-box h4 {
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .leader-box.shebna h4 {
+      color: #c47a5c;
+    }
+
+    .leader-box.eliakim h4 {
+      color: #d4a85c;
+    }
+
+    .leader-box .description {
+      font-size: 0.9rem;
+      color: #c4a574;
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+
+    .leader-box .quote {
+      font-style: italic;
+      font-size: 0.9rem;
+    }
+
+    .twist-btn {
+      width: 100%;
+      background: rgba(0,0,0,0.5);
+      border: 2px solid rgba(184, 134, 72, 0.6);
+      padding: 1.25rem;
+      color: #e8dcc4;
+      cursor: pointer;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1rem;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .twist-btn:hover {
+      background: rgba(0,0,0,0.6);
+    }
+
+    .twist-btn .small {
+      color: #b88648;
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      margin-bottom: 0.5rem;
+    }
+
+    .twist-btn .hint {
+      font-size: 0.85rem;
+      color: #a89070;
+      margin-top: 0.25rem;
+      margin-bottom: 0;
+    }
+
+    .twist-result {
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .twist-result.visible {
+      display: block;
+    }
+
+    .twist-box {
+      background: rgba(0,0,0,0.4);
+      border: 2px solid rgba(139, 69, 47, 0.5);
+      padding: 1.25rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .twist-box .quote {
+      font-style: italic;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+
+    .twist-box .quote strong {
+      color: #c47a5c;
+    }
+
+    .twist-box .ref {
+      font-size: 0.85rem;
+      color: #b88648;
+    }
+
+    .twist-lesson {
+      background: linear-gradient(135deg, rgba(139, 94, 47, 0.2) 0%, rgba(184, 134, 72, 0.15) 100%);
+      padding: 1.25rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .twist-lesson p:first-child {
+      font-size: 1.1rem;
+      line-height: 1.7;
+      margin-bottom: 0.75rem;
+    }
+
+    .twist-lesson p:first-child strong {
+      color: #c47a5c;
+    }
+
+    .twist-lesson p:last-child {
+      color: #d4a85c;
+      font-size: 1.15rem;
+    }
+
+    /* Reflection */
+    .reflection-box {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(184, 134, 72, 0.4);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      min-height: 220px;
+    }
+
+    .reflection-counter {
+      font-size: 0.75rem;
+      color: #b88648;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+    }
+
+    .reflection-question {
+      font-size: 1.2rem;
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+    }
+
+    .reflection-insight {
+      display: none;
+      font-size: 0.95rem;
+      color: #c4a574;
+      line-height: 1.7;
+      font-style: italic;
+      border-left: 2px solid #b88648;
+      padding-left: 1rem;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .reflection-insight.visible {
+      display: block;
+    }
+
+    .reflection-nav {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .reflection-dot {
+      width: 40px;
+      height: 40px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(184, 134, 72, 0.3);
+      color: #e8dcc4;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      transition: all 0.2s;
+    }
+
+    .reflection-dot.active {
+      background: rgba(184, 134, 72, 0.4);
+      border-color: #b88648;
+    }
+
+    .continue-btn {
+      display: none;
+      width: 100%;
+      margin-top: 1.5rem;
+    }
+
+    .continue-btn.visible {
+      display: block;
+    }
+
+    /* Final stage */
+    .final-box {
+      background: linear-gradient(135deg, rgba(139, 94, 47, 0.25) 0%, rgba(184, 134, 72, 0.15) 100%);
+      border: 2px solid rgba(184, 134, 72, 0.5);
+      padding: 2rem 1.5rem;
+      text-align: center;
+    }
+
+    .final-box .intro {
+      font-size: 1.3rem;
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+
+    .final-box .main-idea {
+      font-size: 1.5rem;
+      font-family: "Cinzel", Georgia, serif;
+      color: #d4a85c;
+      margin-bottom: 1.5rem;
+    }
+
+    .final-box .closing {
+      color: #c4a574;
+      font-size: 1rem;
+      font-style: italic;
+      line-height: 1.7;
+    }
+
+    .final-note {
+      margin-top: 2rem;
+      text-align: center;
+    }
+
+    .final-note p {
+      color: #a89070;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 500px) {
+      .leader-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-dot" data-stage="1"></div>
+      <div class="progress-dot" data-stage="2"></div>
+      <div class="progress-dot" data-stage="3"></div>
+      <div class="progress-dot" data-stage="4"></div>
+    </div>
+
+    <main>
+      <!-- STAGE 0: Introduction -->
+      <div class="stage active" id="stage0">
+        <p class="label">ISAIAH 20–23</p>
+        <h1>The year is approximately 711 BC.</h1>
+        <p class="subtitle">
+          Assyria has crushed everything in its path. Damascus, Israel, Philistia — all gone. 
+          Judah stands alone, surrounded.
+        </p>
+        <div class="question-box">
+          <p>"Who can save us?"</p>
+        </div>
+        <button class="btn-primary" onclick="goToStage(1)">EXPLORE THE OPTIONS</button>
+      </div>
+
+      <!-- STAGE 1: Securities Fall -->
+      <div class="stage" id="stage1">
+        <p class="label">THE QUESTION</p>
+        <h2>Where will Judah look for security?</h2>
+        <p class="hint">Tap each option to see what happens to it</p>
+
+        <div class="security-list" id="securityList">
+          <div class="security-card" data-id="egypt" onclick="revealSecurity(this)">
+            <div class="security-header">
+              <span class="security-icon">🏛️</span>
+              <div class="security-info">
+                <p class="security-name">Egypt & Cush</p>
+                <p class="security-promise">Military superpower — surely they can stop Assyria?</p>
+              </div>
+              <span class="security-action">TAP</span>
+            </div>
+            <div class="security-fate">Led away as captives, naked and barefoot. Isaiah walked naked for 3 years as a sign of their shame. (20:3-5)</div>
+          </div>
+
+          <div class="security-card" data-id="babylon" onclick="revealSecurity(this)">
+            <div class="security-header">
+              <span class="security-icon">🗼</span>
+              <div class="security-info">
+                <p class="security-name">Babylon</p>
+                <p class="security-promise">Rising rebellion — Merodach-Baladan will unite us against Assyria!</p>
+              </div>
+              <span class="security-action">TAP</span>
+            </div>
+            <div class="security-fate">"Fallen, fallen is Babylon! All the images of its gods lie shattered on the ground." (21:9)</div>
+          </div>
+
+          <div class="security-card" data-id="arabia" onclick="revealSecurity(this)">
+            <div class="security-header">
+              <span class="security-icon">🏜️</span>
+              <div class="security-info">
+                <p class="security-name">Arabia & Kedar</p>
+                <p class="security-promise">Desert warriors — their archers are legendary!</p>
+              </div>
+              <span class="security-action">TAP</span>
+            </div>
+            <div class="security-fate">"Within one year... all the splendour of Kedar will come to an end." (21:16-17)</div>
+          </div>
+
+          <div class="security-card" data-id="tyre" onclick="revealSecurity(this)">
+            <div class="security-header">
+              <span class="security-icon">⚓</span>
+              <div class="security-info">
+                <p class="security-name">Tyre</p>
+                <p class="security-promise">Wealthiest trade empire — money can buy anything!</p>
+              </div>
+              <span class="security-action">TAP</span>
+            </div>
+            <div class="security-fate">"Who planned this against Tyre, the bestower of crowns? The LORD Almighty planned it." (23:8-9)</div>
+          </div>
+
+          <div class="security-card" data-id="leaders" onclick="revealSecurity(this)">
+            <div class="security-header">
+              <span class="security-icon">👑</span>
+              <div class="security-info">
+                <p class="security-name">Our Leaders</p>
+                <p class="security-promise">Shebna controls the palace — he knows what to do!</p>
+              </div>
+              <span class="security-action">TAP</span>
+            </div>
+            <div class="security-fate">God says he will be "hurled away, rolled up like a ball" — disgraced and removed. (22:17-19)</div>
+          </div>
+        </div>
+
+        <div class="all-fallen-message" id="allFallenMessage">
+          <p>Every refuge has fallen.<br/><strong>Only the LORD remains standing.</strong></p>
+          <button class="btn-primary" onclick="goToStage(2)">HOW DOES JERUSALEM RESPOND?</button>
+        </div>
+      </div>
+
+      <!-- STAGE 2: Jerusalem's Response -->
+      <div class="stage" id="stage2">
+        <p class="label">ISAIAH 22 — THE VALLEY OF VISION</p>
+        <h2>News arrives: Babylon has fallen.<br/><span style="color: #c4a574;">How do God's people respond?</span></h2>
+
+        <div id="responseOptions">
+          <p class="hint">Which response do you think they chose?</p>
+          <div class="response-options">
+            <button class="response-option" onclick="selectResponse('trust')">
+              <p>They trusted God's promises</p>
+              <p>Remembered Isaiah's words that Zion would be saved</p>
+            </button>
+            <button class="response-option" onclick="selectResponse('action')">
+              <p>They took frantic action</p>
+              <p>Weapons, walls, water — prepare for the worst</p>
+            </button>
+            <button class="response-option" onclick="selectResponse('despair')">
+              <p>They gave up hope</p>
+              <p>"Let us eat and drink, for tomorrow we die"</p>
+            </button>
+          </div>
+        </div>
+
+        <div class="response-result" id="responseResult">
+          <div class="result-box" id="resultBox">
+            <p id="resultText"></p>
+          </div>
+
+          <button class="btn-secondary full-width" id="revealScriptureBtn" onclick="revealScripture()" style="width: 100%; letter-spacing: 0.1em;">
+            REVEAL WHAT SCRIPTURE SAYS
+          </button>
+
+          <div class="scripture-reveal" id="scriptureReveal">
+            <div class="scripture-box self-reliance">
+              <h4>First: Frantic Self-Reliance (22:8-11)</h4>
+              <p class="description">They looked to weapons, counted houses, tore down buildings to strengthen walls, built reservoirs...</p>
+              <p class="quote">"But you did not look to the One who made it, or have regard for the One who planned it long ago."</p>
+            </div>
+
+            <div class="scripture-box despair">
+              <h4>Then: Fatalistic Despair (22:12-13)</h4>
+              <p class="description">God called for weeping and mourning. Instead, there was joy and revelry...</p>
+              <p class="quote">"Let us eat and drink, for tomorrow we die!"</p>
+            </div>
+
+            <div class="neither-faith">
+              <p><strong>Neither is faith.</strong><br/><span>Both refuse to look to "the One who planned it long ago."</span></p>
+            </div>
+
+            <button class="btn-primary full-width" onclick="goToStage(3)">WHAT ABOUT THEIR LEADERS?</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 3: Two Leaders -->
+      <div class="stage" id="stage3">
+        <p class="label">ISAIAH 22:15-25</p>
+        <h2>Two leaders. One choice.<br/><span style="color: #c4a574;">Who would you follow?</span></h2>
+
+        <div class="leader-grid" id="leaderOptions">
+          <button class="leader-btn" onclick="selectLeader('shebna')">
+            <div class="leader-icon">👤</div>
+            <p class="leader-name">Shebna</p>
+            <p class="leader-role">Palace steward, man of action</p>
+          </button>
+          <button class="leader-btn" onclick="selectLeader('eliakim')">
+            <div class="leader-icon">🔑</div>
+            <p class="leader-name">Eliakim</p>
+            <p class="leader-role">Called "my servant" by God</p>
+          </button>
+        </div>
+
+        <div class="leader-result" id="leaderResult">
+          <div class="leader-box shebna">
+            <h4>Shebna — The Self-Server</h4>
+            <p class="description">While the city faces destruction, he's carving himself a grand tomb "on the height" — securing his legacy among the great. Splendid chariots. Building his own name.</p>
+            <p class="quote">God's verdict: "I will hurl you away... you will die there." (22:17-18)</p>
+          </div>
+
+          <div class="leader-box eliakim">
+            <h4>Eliakim — The Faithful Servant</h4>
+            <p class="description">Called "my servant." Given the key of David. "A father to those who live in Jerusalem." Driven like a peg into a firm place — stable, reliable, trustworthy.</p>
+            <p class="quote">He'll be "a seat of honour for his father's house." (22:23)</p>
+          </div>
+
+          <button class="twist-btn" id="twistBtn" onclick="revealTwist()">
+            <p class="small">BUT WAIT</p>
+            <p>What happens to Eliakim's peg?</p>
+            <p class="hint">Tap to find out</p>
+          </button>
+
+          <div class="twist-result" id="twistResult">
+            <div class="twist-box">
+              <p class="quote">"In that day... <strong>the peg driven into the firm place will give way</strong>; it will be sheared off and fall, and the load hanging on it will be cut down."</p>
+              <p class="ref">— Isaiah 22:25</p>
+            </div>
+
+            <div class="twist-lesson">
+              <p>Even Eliakim — faithful, stable, father-like — <strong>cannot hold ultimate weight.</strong></p>
+              <p>No human can be the peg that never fails.<br/><strong>Only God can bear that trust.</strong></p>
+            </div>
+
+            <button class="btn-primary full-width" onclick="goToStage(4)">WHAT DOES THIS MEAN FOR ME?</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 4: Reflection -->
+      <div class="stage" id="stage4">
+        <p class="label">REFLECTION</p>
+        <h2>Sit with these questions</h2>
+
+        <div class="reflection-box">
+          <p class="reflection-counter">QUESTION <span id="reflectionNum">1</span> OF 3</p>
+          <p class="reflection-question" id="reflectionQuestion">Where am I busy "strengthening walls" instead of looking to God?</p>
+          
+          <button class="btn-secondary" id="insightBtn" onclick="showInsight()">Consider, then tap for insight</button>
+          
+          <p class="reflection-insight" id="reflectionInsight">Self-reliance looks responsible. But we can be so busy managing the crisis that we forget God planned it. What practical steps are consuming your trust?</p>
+        </div>
+
+        <div class="reflection-nav">
+          <button class="reflection-dot active" data-index="0" onclick="goToReflection(0)">1</button>
+          <button class="reflection-dot" data-index="1" onclick="goToReflection(1)">2</button>
+          <button class="reflection-dot" data-index="2" onclick="goToReflection(2)">3</button>
+        </div>
+
+        <button class="btn-primary full-width continue-btn" id="continueBtn" onclick="goToStage(5)">SEE THE BIG IDEA</button>
+      </div>
+
+      <!-- STAGE 5: Big Idea -->
+      <div class="stage" id="stage5">
+        <p class="label" style="margin-bottom: 1.5rem;">THE BIG IDEA</p>
+
+        <div class="final-box">
+          <p class="intro">When every other security collapses,</p>
+          <p class="main-idea">God exposes whether His people truly trust Him.</p>
+          <p class="closing">Jerusalem's panic in chapter 22 shows how easily we forget God's promises when trouble approaches.</p>
+        </div>
+
+        <div class="final-note">
+          <p>Remember: Assyria stopped at Jerusalem (37:33-36).<br/>God kept His word.</p>
+          <button class="btn-secondary" onclick="restart()">START AGAIN</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // State
+    let currentStage = 0;
+    let revealedSecurities = [];
+    let selectedResponseType = null;
+    let currentReflection = 0;
+    let reflectionInsightsShown = [false, false, false];
+
+    const reflections = [
+      {
+        question: 'Where am I busy "strengthening walls" instead of looking to God?',
+        insight: 'Self-reliance looks responsible. But we can be so busy managing the crisis that we forget God planned it. What practical steps are consuming your trust?'
+      },
+      {
+        question: 'Where have I drifted into quiet fatalism?',
+        insight: '"Let us eat and drink" isn\'t joy — it\'s surrender disguised as realism. Where have you stopped hoping because the situation feels impossible?'
+      },
+      {
+        question: 'What would genuine trust look like right now?',
+        insight: 'Trust means looking to "the One who planned it long ago." Not passive, not frantic — confident rest in God\'s purposes even when circumstances terrify.'
+      }
+    ];
+
+    function goToStage(stage) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage' + stage).classList.add('active');
+      currentStage = stage;
+
+      // Update progress bar
+      const progressBar = document.getElementById('progressBar');
+      if (stage > 0 && stage < 5) {
+        progressBar.classList.add('visible');
+        document.querySelectorAll('.progress-dot').forEach(dot => {
+          dot.classList.toggle('active', parseInt(dot.dataset.stage) <= stage);
+        });
+      } else {
+        progressBar.classList.remove('visible');
+      }
+    }
+
+    function revealSecurity(card) {
+      if (card.classList.contains('revealed')) return;
+      
+      card.classList.add('revealed');
+      card.querySelector('.security-action').textContent = '✗';
+      revealedSecurities.push(card.dataset.id);
+
+      if (revealedSecurities.length === 5) {
+        document.getElementById('allFallenMessage').classList.add('visible');
+      }
+    }
+
+    function selectResponse(type) {
+      selectedResponseType = type;
+      document.getElementById('responseOptions').style.display = 'none';
+      document.getElementById('responseResult').classList.add('visible');
+
+      const resultBox = document.getElementById('resultBox');
+      const resultText = document.getElementById('resultText');
+
+      if (type === 'trust') {
+        resultBox.classList.add('wrong');
+        resultText.innerHTML = 'That would have been the right response...<br/><strong style="color: #c47a5c;">but that\'s not what happened.</strong>';
+      } else if (type === 'action') {
+        resultText.innerHTML = 'Yes — they took frantic action.<br/><span style="color: #c4a574;">But there\'s more...</span>';
+      } else {
+        resultText.innerHTML = 'Yes — they gave in to despair.<br/><span style="color: #c4a574;">But there\'s more...</span>';
+      }
+    }
+
+    function revealScripture() {
+      document.getElementById('revealScriptureBtn').style.display = 'none';
+      document.getElementById('scriptureReveal').classList.add('visible');
+    }
+
+    function selectLeader(leader) {
+      document.getElementById('leaderOptions').style.display = 'none';
+      document.getElementById('leaderResult').classList.add('visible');
+    }
+
+    function revealTwist() {
+      document.getElementById('twistBtn').style.display = 'none';
+      document.getElementById('twistResult').classList.add('visible');
+    }
+
+    function goToReflection(index) {
+      currentReflection = index;
+      
+      document.querySelectorAll('.reflection-dot').forEach(dot => {
+        dot.classList.toggle('active', parseInt(dot.dataset.index) === index);
+      });
+
+      document.getElementById('reflectionNum').textContent = index + 1;
+      document.getElementById('reflectionQuestion').textContent = reflections[index].question;
+      document.getElementById('reflectionInsight').textContent = reflections[index].insight;
+
+      // Show/hide insight based on previous state
+      const insightEl = document.getElementById('reflectionInsight');
+      const insightBtn = document.getElementById('insightBtn');
+      
+      if (reflectionInsightsShown[index]) {
+        insightEl.classList.add('visible');
+        insightBtn.style.display = 'none';
+      } else {
+        insightEl.classList.remove('visible');
+        insightBtn.style.display = 'inline-block';
+      }
+
+      // Show continue button if all reflections have been seen
+      checkAllReflectionsSeen();
+    }
+
+    function showInsight() {
+      reflectionInsightsShown[currentReflection] = true;
+      document.getElementById('reflectionInsight').classList.add('visible');
+      document.getElementById('insightBtn').style.display = 'none';
+      checkAllReflectionsSeen();
+    }
+
+    function checkAllReflectionsSeen() {
+      if (reflectionInsightsShown.every(shown => shown)) {
+        document.getElementById('continueBtn').classList.add('visible');
+      }
+    }
+
+    function restart() {
+      // Reset state
+      revealedSecurities = [];
+      selectedResponseType = null;
+      currentReflection = 0;
+      reflectionInsightsShown = [false, false, false];
+
+      // Reset UI elements
+      document.querySelectorAll('.security-card').forEach(card => {
+        card.classList.remove('revealed');
+        card.querySelector('.security-action').textContent = 'TAP';
+      });
+      document.getElementById('allFallenMessage').classList.remove('visible');
+
+      document.getElementById('responseOptions').style.display = 'block';
+      document.getElementById('responseResult').classList.remove('visible');
+      document.getElementById('resultBox').classList.remove('wrong');
+      document.getElementById('revealScriptureBtn').style.display = 'block';
+      document.getElementById('scriptureReveal').classList.remove('visible');
+
+      document.getElementById('leaderOptions').style.display = 'grid';
+      document.getElementById('leaderResult').classList.remove('visible');
+      document.getElementById('twistBtn').style.display = 'block';
+      document.getElementById('twistResult').classList.remove('visible');
+
+      goToReflection(0);
+      document.getElementById('continueBtn').classList.remove('visible');
+
+      goToStage(0);
+    }
+  </script>
+</body>
+</html>
